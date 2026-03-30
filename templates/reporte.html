@@ -350,10 +350,10 @@
                     <div class="bar-title">Del consumo total del cliente: cuánto se cubrió con autoconsumo y cuánto se importó desde UTE. Total: {{ consumo_total }} kWh</div>
                     <div class="stacked-bar">
                         <div class="seg-autoconsumo" style="width: {{ consumo_bar_autoconsumo }}%;">
-                            {% if consumo_bar_autoconsumo|float >= 16 %}{{ consumo_bar_autoconsumo }}% - {{ consumo_autoconsumo_kwh }} kWh{% elif consumo_bar_autoconsumo|float >= 8 %}{{ consumo_bar_autoconsumo }}%{% endif %}
+                            {% if consumo_bar_autoconsumo|float >= 16 %}{{ consumo_bar_autoconsumo_label }}% - {{ consumo_autoconsumo_kwh }} kWh{% elif consumo_bar_autoconsumo|float >= 8 %}{{ consumo_bar_autoconsumo_label }}%{% endif %}
                         </div>
                         <div class="seg-red" style="width: {{ consumo_bar_red }}%;">
-                            {% if consumo_bar_red|float >= 16 %}{{ consumo_bar_red }}% - {{ consumo_red_kwh }} kWh{% elif consumo_bar_red|float >= 8 %}{{ consumo_bar_red }}%{% endif %}
+                            {% if consumo_bar_red|float >= 16 %}{{ consumo_bar_red_label }}% - {{ consumo_red_kwh }} kWh{% elif consumo_bar_red|float >= 8 %}{{ consumo_bar_red_label }}%{% endif %}
                         </div>
                     </div>
                     <div class="legend">
@@ -366,10 +366,10 @@
                     <div class="bar-title">De la generación total de los paneles: cuánto se utilizó en autoconsumo y cuánto se exportó a UTE. Total: {{ generacion_total }} kWh</div>
                     <div class="stacked-bar">
                         <div class="seg-autoconsumo" style="width: {{ generacion_bar_autoconsumo }}%;">
-                            {% if generacion_bar_autoconsumo|float >= 16 %}{{ generacion_bar_autoconsumo }}% - {{ generacion_autoconsumo_kwh }} kWh{% elif generacion_bar_autoconsumo|float >= 8 %}{{ generacion_bar_autoconsumo }}%{% endif %}
+                            {% if generacion_bar_autoconsumo|float >= 16 %}{{ generacion_bar_autoconsumo_label }}% - {{ generacion_autoconsumo_kwh }} kWh{% elif generacion_bar_autoconsumo|float >= 8 %}{{ generacion_bar_autoconsumo_label }}%{% endif %}
                         </div>
                         <div class="seg-exportada" style="width: {{ generacion_bar_exportada }}%;">
-                            {% if generacion_bar_exportada|float >= 16 %}{{ generacion_bar_exportada }}% - {{ generacion_exportada_kwh }} kWh{% elif generacion_bar_exportada|float >= 8 %}{{ generacion_bar_exportada }}%{% endif %}
+                            {% if generacion_bar_exportada|float >= 16 %}{{ generacion_bar_exportada_label }}% - {{ generacion_exportada_kwh }} kWh{% elif generacion_bar_exportada|float >= 8 %}{{ generacion_bar_exportada_label }}%{% endif %}
                         </div>
                     </div>
                     <div class="legend">
@@ -437,11 +437,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Ahorro por autoconsumo</td><td>${{ simple.ahorro_autoconsumo }}</td><td>${{ doble.ahorro_autoconsumo }}</td><td>${{ triple.ahorro_autoconsumo }}</td></tr>
-                        <tr><td>Ahorro por venta de energía a UTE</td><td>${{ simple.ahorro_venta }}</td><td>${{ doble.ahorro_venta }}</td><td>${{ triple.ahorro_venta }}</td></tr>
+                        <tr><td>Ahorro por autoconsumo</td><td>${{ simple.ahorro_autoconsumo_int }}</td><td>${{ doble.ahorro_autoconsumo_int }}</td><td>${{ triple.ahorro_autoconsumo_int }}</td></tr>
+                        <tr><td>Ahorro por venta de energía a UTE</td><td>${{ simple.ahorro_venta_int }}</td><td>${{ doble.ahorro_venta_int }}</td><td>${{ triple.ahorro_venta_int }}</td></tr>
                         <tr><td>% del ahorro por autoconsumo</td><td>{{ simple.pct_autoconsumo }}%</td><td>{{ doble.pct_autoconsumo }}%</td><td>{{ triple.pct_autoconsumo }}%</td></tr>
                         <tr><td>% del ahorro por venta a UTE</td><td>{{ simple.pct_venta }}%</td><td>{{ doble.pct_venta }}%</td><td>{{ triple.pct_venta }}%</td></tr>
-                        <tr class="total-row"><td>Ahorro total</td><td>${{ simple.ahorro_total_desglose }}</td><td>${{ doble.ahorro_total_desglose }}</td><td>${{ triple.ahorro_total_desglose }}</td></tr>
+                        <tr class="total-row"><td>Ahorro total</td><td>${{ simple.ahorro_total_desglose_int }}</td><td>${{ doble.ahorro_total_desglose_int }}</td><td>${{ triple.ahorro_total_desglose_int }}</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -488,6 +488,8 @@
                     Este reporte presenta una <strong>simulación económica estimada</strong> en base a los datos energéticos disponibles del cliente, considerando IVA sobre energía y potencia, energía vendida sin IVA y retención IRPF sobre la energía exportada.
                     <br><br>
                     En tarifa doble horario se asume la exportación en <strong>fuera de punta</strong>. En tarifa triple horario se asume la exportación en <strong>llano</strong>. El crédito por energía vendida del mes actual se calcula usando la exportación del <strong>mes anterior</strong>. En el cuadro comparativo, el descuento por venta se muestra <strong>neto de IRPF 12%</strong>.
+                    <br><br>
+                    En las tarifas inteligentes, la proporción del consumo atribuida a cada franja horaria se estimó de forma <strong>aproximada</strong>, ya que no contamos con el desglose real por horario y ese reparto depende de los hábitos de consumo de cada cliente.
                     <br><br>
                     El objetivo del reporte es mostrar con claridad cómo se compone el ahorro económico del sistema fotovoltaico, separando el impacto del <strong>autoconsumo</strong> del impacto de la <strong>venta de excedentes a UTE</strong>.
                 </div>

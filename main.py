@@ -39,7 +39,7 @@ def formatear_mes_es(fecha):
 
 
 def fmt(num):
-    return f"{float(num):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return fmt_int(num)
 
 
 def fmt_int(num):
@@ -47,7 +47,7 @@ def fmt_int(num):
 
 
 def fmt_pct(num):
-    return fmt(num).replace(",00", "")
+    return fmt_int(num)
 
 
 def pct(part, total):
@@ -330,11 +330,15 @@ for _, fila in df_mes_actual.iterrows():
 
         consumo_bar_autoconsumo=round(pct_consumo_autoconsumo, 1),
         consumo_bar_red=round(pct_consumo_red, 1),
+        consumo_bar_autoconsumo_label=fmt_int(pct_consumo_autoconsumo),
+        consumo_bar_red_label=fmt_int(pct_consumo_red),
         consumo_total=fmt(consumo),
         consumo_autoconsumo_kwh=fmt(autoconsumo),
         consumo_red_kwh=fmt(importacion_red),
         generacion_bar_autoconsumo=round(pct_generacion_autoconsumo, 1),
         generacion_bar_exportada=round(pct_generacion_exportada, 1),
+        generacion_bar_autoconsumo_label=fmt_int(pct_generacion_autoconsumo),
+        generacion_bar_exportada_label=fmt_int(pct_generacion_exportada),
         generacion_total=fmt(generacion),
         generacion_autoconsumo_kwh=fmt(autoconsumo),
         generacion_exportada_kwh=fmt(exportacion),
@@ -354,7 +358,9 @@ for _, fila in df_mes_actual.iterrows():
             "ahorro_autoconsumo": fmt(desglose_simple["ahorro_autoconsumo"]),
             "ahorro_autoconsumo_int": fmt_int(desglose_simple["ahorro_autoconsumo"]),
             "ahorro_venta": fmt(desglose_simple["ahorro_venta"]),
+            "ahorro_venta_int": fmt_int(desglose_simple["ahorro_venta"]),
             "ahorro_total_desglose": fmt(desglose_simple["ahorro_total"]),
+            "ahorro_total_desglose_int": fmt_int(desglose_simple["ahorro_total"]),
             "pct_autoconsumo": fmt_pct(desglose_simple["pct_autoconsumo"]),
             "pct_venta": fmt_pct(desglose_simple["pct_venta"]),
         },
@@ -373,7 +379,9 @@ for _, fila in df_mes_actual.iterrows():
             "ahorro_autoconsumo": fmt(desglose_doble["ahorro_autoconsumo"]),
             "ahorro_autoconsumo_int": fmt_int(desglose_doble["ahorro_autoconsumo"]),
             "ahorro_venta": fmt(desglose_doble["ahorro_venta"]),
+            "ahorro_venta_int": fmt_int(desglose_doble["ahorro_venta"]),
             "ahorro_total_desglose": fmt(desglose_doble["ahorro_total"]),
+            "ahorro_total_desglose_int": fmt_int(desglose_doble["ahorro_total"]),
             "pct_autoconsumo": fmt_pct(desglose_doble["pct_autoconsumo"]),
             "pct_venta": fmt_pct(desglose_doble["pct_venta"]),
         },
@@ -392,7 +400,9 @@ for _, fila in df_mes_actual.iterrows():
             "ahorro_autoconsumo": fmt(desglose_triple["ahorro_autoconsumo"]),
             "ahorro_autoconsumo_int": fmt_int(desglose_triple["ahorro_autoconsumo"]),
             "ahorro_venta": fmt(desglose_triple["ahorro_venta"]),
+            "ahorro_venta_int": fmt_int(desglose_triple["ahorro_venta"]),
             "ahorro_total_desglose": fmt(desglose_triple["ahorro_total"]),
+            "ahorro_total_desglose_int": fmt_int(desglose_triple["ahorro_total"]),
             "pct_autoconsumo": fmt_pct(desglose_triple["pct_autoconsumo"]),
             "pct_venta": fmt_pct(desglose_triple["pct_venta"]),
         },
