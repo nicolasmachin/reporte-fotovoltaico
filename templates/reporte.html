@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte mensual fotovoltaico - {{ cliente }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 18mm;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            color: #1f2937;
+            background: #f3f6fa;
+        }
+
+        .page {
+            max-width: 980px;
+            margin: 24px auto;
+            background: #ffffff;
+            padding: 28px 32px 32px 32px;
+            box-shadow: 0 2px 14px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo-wrap {
+            text-align: center;
+            margin-bottom: 14px;
+        }
+
+        .logo {
+            max-width: 280px;
+            max-height: 110px;
+            height: auto;
+        }
+
+        .title {
+            text-align: center;
+            margin: 10px 0 2px 0;
+            font-size: 22px;
+            font-weight: 700;
+            color: #0a4f86;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin: 0 0 22px 0;
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        .section {
+            border: 1.5px solid #2e3a46;
+            margin-bottom: 18px;
+            background: #ffffff;
+        }
+
+        .section-header {
+            background: #0a4f86;
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            padding: 9px 12px;
+        }
+
+        .section-body {
+            padding: 14px 16px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table td {
+            padding: 7px 6px;
+            border-bottom: 1px solid #d7dee6;
+            vertical-align: top;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .label {
+            width: 44%;
+            color: #334155;
+            font-weight: 700;
+        }
+
+        .value {
+            color: #111827;
+            text-align: right;
+        }
+
+        .kpi-card {
+            border: 1px solid #d6dde6;
+            background: #f8fbff;
+            padding: 14px 12px;
+            min-height: 88px;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 8px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .kpi-value {
+            font-size: 26px;
+            font-weight: 700;
+            color: #0a4f86;
+            line-height: 1.1;
+        }
+
+        .kpi-unit {
+            font-size: 13px;
+            color: #475569;
+            margin-top: 4px;
+        }
+
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .compare-table th,
+        .compare-table td {
+            border: 1px solid #cbd5e1;
+            padding: 9px 8px;
+        }
+
+        .compare-table th {
+            background: #eaf3fb;
+            color: #0a4f86;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .compare-table td {
+            text-align: right;
+        }
+
+        .compare-table td:first-child,
+        .compare-table th:first-child {
+            text-align: left;
+            font-weight: 700;
+        }
+
+        .total-row td {
+            background: #f1f7fd;
+            font-weight: 700;
+            color: #0a4f86;
+        }
+
+        .note-box {
+            border: 1px solid #cbd5e1;
+            background: #f8fbff;
+            padding: 14px 16px;
+            font-size: 12.5px;
+            line-height: 1.6;
+            color: #334155;
+        }
+
+        .footer {
+            margin-top: 18px;
+            padding-top: 10px;
+            border-top: 1px solid #dbe3ec;
+            text-align: center;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .intro {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #334155;
+        }
+
+        ul {
+            margin: 8px 0 0 18px;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        .bar-wrap {
+            margin-top: 10px;
+            margin-bottom: 18px;
+        }
+
+        .bar-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+
+        .stacked-bar {
+            width: 100%;
+            height: 28px;
+            background: #e5e7eb;
+            display: flex;
+            overflow: hidden;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .seg-autoconsumo {
+            background: #0a4f86;
+            color: white;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        .seg-red {
+            background: #94a3b8;
+            color: white;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        .seg-exportada {
+            background: #60a5fa;
+            color: white;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        .legend {
+            display: flex;
+            gap: 18px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #475569;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-box {
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .page {
+                box-shadow: none;
+                margin: 0;
+                max-width: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+
+        <div class="logo-wrap">
+            <img src="assets/logo_voltia_completo.png" alt="Voltia" class="logo">
+        </div>
+
+        <div class="title">Reporte mensual de rendimiento fotovoltaico</div>
+        <div class="subtitle">Simulación energética y económica del sistema instalado</div>
+
+        <div class="section">
+            <div class="section-header">Datos generales</div>
+            <div class="section-body">
+                <div class="grid-2">
+                    <table class="data-table">
+                        <tr><td class="label">Cliente</td><td class="value">{{ cliente }}</td></tr>
+                        <tr><td class="label">Mes calculado</td><td class="value">{{ mes }}</td></tr>
+                        <tr><td class="label">Mes anterior utilizado para crédito</td><td class="value">{{ mes_anterior }}</td></tr>
+                    </table>
+
+                    <table class="data-table">
+                        <tr><td class="label">Potencia contratada</td><td class="value">{{ potencia }} kW</td></tr>
+                        <tr><td class="label">Perfil horario estimado</td><td class="value">P {{ pct_punta }}% · L {{ pct_llano }}% · V {{ pct_valle }}%</td></tr>
+                        <tr><td class="label">Importación estimada desde red</td><td class="value">{{ importacion_red }} kWh</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">Resumen energético</div>
+            <div class="section-body">
+                <div class="grid-3">
+                    <div class="kpi-card"><div class="kpi-label">Generación</div><div class="kpi-value">{{ generacion }}</div><div class="kpi-unit">kWh</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Consumo total</div><div class="kpi-value">{{ consumo }}</div><div class="kpi-unit">kWh</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Autoconsumo</div><div class="kpi-value">{{ autoconsumo }}</div><div class="kpi-unit">kWh</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Exportación mes actual</div><div class="kpi-value">{{ exportacion_actual }}</div><div class="kpi-unit">kWh</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Exportación mes anterior</div><div class="kpi-value">{{ exportacion_anterior }}</div><div class="kpi-unit">kWh</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Autoconsumo sobre consumo</div><div class="kpi-value">{{ autoconsumo_sobre_consumo }}%</div><div class="kpi-unit">del consumo del mes</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">Distribución de la energía</div>
+            <div class="section-body">
+
+                <div class="bar-wrap">
+                    <div class="bar-title">Del consumo total del cliente: cuánto se cubrió con autoconsumo y cuánto se importó desde UTE</div>
+                    <div class="stacked-bar">
+                        <div class="seg-autoconsumo" style="width: {{ consumo_bar_autoconsumo }}%;">
+                            {% if consumo_bar_autoconsumo|float >= 8 %}{{ consumo_bar_autoconsumo }}%{% endif %}
+                        </div>
+                        <div class="seg-red" style="width: {{ consumo_bar_red }}%;">
+                            {% if consumo_bar_red|float >= 8 %}{{ consumo_bar_red }}%{% endif %}
+                        </div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item"><span class="legend-box" style="background:#0a4f86;"></span><span>Autoconsumo</span></div>
+                        <div class="legend-item"><span class="legend-box" style="background:#94a3b8;"></span><span>Importado desde UTE</span></div>
+                    </div>
+                </div>
+
+                <div class="bar-wrap">
+                    <div class="bar-title">De la generación total de los paneles: cuánto se utilizó en autoconsumo y cuánto se exportó a UTE</div>
+                    <div class="stacked-bar">
+                        <div class="seg-autoconsumo" style="width: {{ generacion_bar_autoconsumo }}%;">
+                            {% if generacion_bar_autoconsumo|float >= 6 %}{{ generacion_bar_autoconsumo }}%{% endif %}
+                        </div>
+                        <div class="seg-exportada" style="width: {{ generacion_bar_exportada }}%;">
+                            {% if generacion_bar_exportada|float >= 8 %}{{ generacion_bar_exportada }}%{% endif %}
+                        </div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item"><span class="legend-box" style="background:#0a4f86;"></span><span>Autoconsumo</span></div>
+                        <div class="legend-item"><span class="legend-box" style="background:#60a5fa;"></span><span>Exportado a UTE</span></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">Cómo leer la comparación económica</div>
+            <div class="section-body">
+                <div class="intro">
+                    En el cuadro siguiente se muestra una <strong>comparativa de las tres tarifas residenciales posibles de UTE</strong>: simple, doble horario y triple horario.
+                    Se presentan las tres opciones porque no siempre se tiene certeza de cuál es la tarifa vigente del cliente y además permite visualizar si otra tarifa podría resultar más conveniente.
+                    <br><br>
+                    <ul>
+                        <li><strong>Sin paneles - total</strong>: cuánto hubiera pagado el cliente en el mes si no tuviera la instalación fotovoltaica.</li>
+                        <li><strong>Con paneles - total neto</strong>: cuánto debería pagar actualmente con paneles, considerando generación solar, compra a UTE y créditos asociados.</li>
+                        <li><strong>Ahorro total</strong>: diferencia entre el escenario sin paneles y el escenario actual con paneles, más el saldo a favor en cuenta corriente cuando corresponda.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">Resumen económico comparativo</div>
+            <div class="section-body">
+                <table class="compare-table">
+                    <thead>
+                        <tr>
+                            <th>Concepto</th>
+                            <th>Tarifa simple</th>
+                            <th>Tarifa doble horario</th>
+                            <th>Tarifa triple horario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Sin paneles - total</td><td>${{ simple.total_sin }}</td><td>${{ doble.total_sin }}</td><td>${{ triple.total_sin }}</td></tr>
+                        <tr><td>Con paneles - total neto</td><td>${{ simple.total_con }}</td><td>${{ doble.total_con }}</td><td>${{ triple.total_con }}</td></tr>
+                        <tr><td>Crédito por energía vendida</td><td>${{ simple.credito }}</td><td>${{ doble.credito }}</td><td>${{ triple.credito }}</td></tr>
+                        <tr><td>Saldo a favor en cuenta corriente</td><td>${{ simple.saldo }}</td><td>${{ doble.saldo }}</td><td>${{ triple.saldo }}</td></tr>
+                        <tr class="total-row"><td>Ahorro total</td><td>${{ simple.ahorro_total }}</td><td>${{ doble.ahorro_total }}</td><td>${{ triple.ahorro_total }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">Desglose del ahorro</div>
+            <div class="section-body">
+                <table class="compare-table">
+                    <thead>
+                        <tr>
+                            <th>Concepto</th>
+                            <th>Tarifa simple</th>
+                            <th>Tarifa doble horario</th>
+                            <th>Tarifa triple horario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Ahorro por autoconsumo</td><td>${{ simple.ahorro_autoconsumo }}</td><td>${{ doble.ahorro_autoconsumo }}</td><td>${{ triple.ahorro_autoconsumo }}</td></tr>
+                        <tr><td>Ahorro por venta de energía a UTE</td><td>${{ simple.ahorro_venta }}</td><td>${{ doble.ahorro_venta }}</td><td>${{ triple.ahorro_venta }}</td></tr>
+                        <tr><td>% del ahorro por autoconsumo</td><td>{{ simple.pct_autoconsumo }}%</td><td>{{ doble.pct_autoconsumo }}%</td><td>{{ triple.pct_autoconsumo }}%</td></tr>
+                        <tr><td>% del ahorro por venta a UTE</td><td>{{ simple.pct_venta }}%</td><td>{{ doble.pct_venta }}%</td><td>{{ triple.pct_venta }}%</td></tr>
+                        <tr class="total-row"><td>Ahorro total</td><td>${{ simple.ahorro_total_desglose }}</td><td>${{ doble.ahorro_total_desglose }}</td><td>${{ triple.ahorro_total_desglose }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">Acumulado anual y control UTE</div>
+            <div class="section-body">
+                <div class="grid-2">
+                    <table class="data-table">
+                        <tr><td class="label">Ahorro acumulado del año</td><td class="value">${{ ahorro_acumulado }}</td></tr>
+                        <tr><td class="label">Saldo acumulado en cuenta corriente</td><td class="value">${{ saldo_acumulado }}</td></tr>
+                    </table>
+
+                    <table class="data-table">
+                        <tr><td class="label">Compra acumulada a UTE</td><td class="value">{{ importacion_acumulada }} kWh</td></tr>
+                        <tr><td class="label">Venta acumulada a UTE</td><td class="value">{{ exportacion_acumulada }} kWh</td></tr>
+                        <tr><td class="label">Relación venta / compra</td><td class="value">{{ ratio_ute }}%</td></tr>
+                        <tr><td class="label">Estado de control anual</td><td class="value">{{ estado_ute }}</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">Interpretación del análisis económico</div>
+            <div class="section-body">
+                <table class="data-table">
+                    <tr><td class="label">Sin paneles - total</td><td class="value">Monto estimado que el cliente hubiera pagado a UTE en el mes si no tuviera la instalación fotovoltaica.</td></tr>
+                    <tr><td class="label">Con paneles - total neto</td><td class="value">Monto estimado que el cliente debería pagar actualmente considerando energía solar, compra a UTE, créditos por venta y retención IRPF.</td></tr>
+                    <tr><td class="label">Crédito por energía vendida</td><td class="value">Valor económico de la energía exportada a la red y reconocida por UTE en la cuenta del cliente.</td></tr>
+                    <tr><td class="label">Saldo a favor en cuenta corriente</td><td class="value">Crédito acumulado en UTE para ser aplicado en facturas futuras. No es un ahorro adicional independiente, sino una forma en que queda registrado parte del ahorro total.</td></tr>
+                    <tr><td class="label">Ahorro total</td><td class="value">Resultado económico total del sistema en el mes analizado. Se puede ver tanto desde la comparación de factura como desde la suma de sus componentes.</td></tr>
+                    <tr><td class="label">Ahorro por autoconsumo</td><td class="value">Parte del ahorro que surge de consumir directamente la energía generada por los paneles, evitando comprar esa energía a UTE.</td></tr>
+                    <tr><td class="label">Ahorro por venta de energía a UTE</td><td class="value">Parte del ahorro que surge de exportar excedentes a la red y recibir el crédito correspondiente, neto de IRPF.</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">Notas aclaratorias</div>
+            <div class="section-body">
+                <div class="note-box">
+                    Este reporte presenta una <strong>simulación económica estimada</strong> en base a los datos energéticos disponibles del cliente, considerando IVA sobre energía y potencia, energía vendida sin IVA y retención IRPF sobre la energía exportada.
+                    <br><br>
+                    En tarifa doble horario se asume la exportación en <strong>fuera de punta</strong>. En tarifa triple horario se asume la exportación en <strong>llano</strong>. El crédito por energía vendida del mes actual se calcula usando la exportación del <strong>mes anterior</strong>.
+                    <br><br>
+                    El objetivo del reporte es mostrar con claridad cómo se compone el ahorro económico del sistema fotovoltaico, separando el impacto del <strong>autoconsumo</strong> del impacto de la <strong>venta de excedentes a UTE</strong>.
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Voltia · Reporte generado automáticamente
+        </div>
+    </div>
+</body>
+</html>
