@@ -42,6 +42,10 @@ def fmt(num):
     return f"{float(num):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def fmt_int(num):
+    return f"{int(round(float(num))):,}".replace(",", ".")
+
+
 def fmt_pct(num):
     return fmt(num).replace(",00", "")
 
@@ -326,16 +330,29 @@ for _, fila in df_mes_actual.iterrows():
 
         consumo_bar_autoconsumo=round(pct_consumo_autoconsumo, 1),
         consumo_bar_red=round(pct_consumo_red, 1),
+        consumo_total=fmt(consumo),
+        consumo_autoconsumo_kwh=fmt(autoconsumo),
+        consumo_red_kwh=fmt(importacion_red),
         generacion_bar_autoconsumo=round(pct_generacion_autoconsumo, 1),
         generacion_bar_exportada=round(pct_generacion_exportada, 1),
+        generacion_total=fmt(generacion),
+        generacion_autoconsumo_kwh=fmt(autoconsumo),
+        generacion_exportada_kwh=fmt(exportacion),
 
         simple={
             "total_sin": fmt(factura_simple_sin["total_neto"]),
+            "total_sin_int": fmt_int(factura_simple_sin["total_neto"]),
             "total_con": fmt(factura_simple_con["total_neto"]),
+            "total_con_int": fmt_int(factura_simple_con["total_neto"]),
             "credito": fmt(factura_simple_con["credito_exportacion"]),
+            "descuento_venta": fmt(desglose_simple["ahorro_venta"]),
+            "descuento_venta_int": fmt_int(desglose_simple["ahorro_venta"]),
             "saldo": fmt(factura_simple_con["saldo_a_favor"]),
+            "saldo_int": fmt_int(factura_simple_con["saldo_a_favor"]),
             "ahorro_total": fmt(ahorro_total_simple),
+            "ahorro_total_int": fmt_int(ahorro_total_simple),
             "ahorro_autoconsumo": fmt(desglose_simple["ahorro_autoconsumo"]),
+            "ahorro_autoconsumo_int": fmt_int(desglose_simple["ahorro_autoconsumo"]),
             "ahorro_venta": fmt(desglose_simple["ahorro_venta"]),
             "ahorro_total_desglose": fmt(desglose_simple["ahorro_total"]),
             "pct_autoconsumo": fmt_pct(desglose_simple["pct_autoconsumo"]),
@@ -343,11 +360,18 @@ for _, fila in df_mes_actual.iterrows():
         },
         doble={
             "total_sin": fmt(factura_doble_sin["total_neto"]),
+            "total_sin_int": fmt_int(factura_doble_sin["total_neto"]),
             "total_con": fmt(factura_doble_con["total_neto"]),
+            "total_con_int": fmt_int(factura_doble_con["total_neto"]),
             "credito": fmt(factura_doble_con["credito_exportacion"]),
+            "descuento_venta": fmt(desglose_doble["ahorro_venta"]),
+            "descuento_venta_int": fmt_int(desglose_doble["ahorro_venta"]),
             "saldo": fmt(factura_doble_con["saldo_a_favor"]),
+            "saldo_int": fmt_int(factura_doble_con["saldo_a_favor"]),
             "ahorro_total": fmt(ahorro_total_doble),
+            "ahorro_total_int": fmt_int(ahorro_total_doble),
             "ahorro_autoconsumo": fmt(desglose_doble["ahorro_autoconsumo"]),
+            "ahorro_autoconsumo_int": fmt_int(desglose_doble["ahorro_autoconsumo"]),
             "ahorro_venta": fmt(desglose_doble["ahorro_venta"]),
             "ahorro_total_desglose": fmt(desglose_doble["ahorro_total"]),
             "pct_autoconsumo": fmt_pct(desglose_doble["pct_autoconsumo"]),
@@ -355,11 +379,18 @@ for _, fila in df_mes_actual.iterrows():
         },
         triple={
             "total_sin": fmt(factura_triple_sin["total_neto"]),
+            "total_sin_int": fmt_int(factura_triple_sin["total_neto"]),
             "total_con": fmt(factura_triple_con["total_neto"]),
+            "total_con_int": fmt_int(factura_triple_con["total_neto"]),
             "credito": fmt(factura_triple_con["credito_exportacion"]),
+            "descuento_venta": fmt(desglose_triple["ahorro_venta"]),
+            "descuento_venta_int": fmt_int(desglose_triple["ahorro_venta"]),
             "saldo": fmt(factura_triple_con["saldo_a_favor"]),
+            "saldo_int": fmt_int(factura_triple_con["saldo_a_favor"]),
             "ahorro_total": fmt(ahorro_total_triple),
+            "ahorro_total_int": fmt_int(ahorro_total_triple),
             "ahorro_autoconsumo": fmt(desglose_triple["ahorro_autoconsumo"]),
+            "ahorro_autoconsumo_int": fmt_int(desglose_triple["ahorro_autoconsumo"]),
             "ahorro_venta": fmt(desglose_triple["ahorro_venta"]),
             "ahorro_total_desglose": fmt(desglose_triple["ahorro_total"]),
             "pct_autoconsumo": fmt_pct(desglose_triple["pct_autoconsumo"]),

@@ -220,7 +220,7 @@
 
         .stacked-bar {
             width: 100%;
-            height: 28px;
+            height: 32px;
             background: #e5e7eb;
             display: flex;
             overflow: hidden;
@@ -231,31 +231,37 @@
         .seg-autoconsumo {
             background: #0a4f86;
             color: white;
-            font-size: 12px;
+            font-size: 11px;
             display: flex;
             align-items: center;
             justify-content: center;
             white-space: nowrap;
+            padding: 0 8px;
+            box-sizing: border-box;
         }
 
         .seg-red {
             background: #94a3b8;
             color: white;
-            font-size: 12px;
+            font-size: 11px;
             display: flex;
             align-items: center;
             justify-content: center;
             white-space: nowrap;
+            padding: 0 8px;
+            box-sizing: border-box;
         }
 
         .seg-exportada {
             background: #60a5fa;
             color: white;
-            font-size: 12px;
+            font-size: 11px;
             display: flex;
             align-items: center;
             justify-content: center;
             white-space: nowrap;
+            padding: 0 8px;
+            box-sizing: border-box;
         }
 
         .legend {
@@ -341,13 +347,13 @@
             <div class="section-body">
 
                 <div class="bar-wrap">
-                    <div class="bar-title">Del consumo total del cliente: cuánto se cubrió con autoconsumo y cuánto se importó desde UTE</div>
+                    <div class="bar-title">Del consumo total del cliente: cuánto se cubrió con autoconsumo y cuánto se importó desde UTE. Total: {{ consumo_total }} kWh</div>
                     <div class="stacked-bar">
                         <div class="seg-autoconsumo" style="width: {{ consumo_bar_autoconsumo }}%;">
-                            {% if consumo_bar_autoconsumo|float >= 8 %}{{ consumo_bar_autoconsumo }}%{% endif %}
+                            {% if consumo_bar_autoconsumo|float >= 16 %}{{ consumo_bar_autoconsumo }}% - {{ consumo_autoconsumo_kwh }} kWh{% elif consumo_bar_autoconsumo|float >= 8 %}{{ consumo_bar_autoconsumo }}%{% endif %}
                         </div>
                         <div class="seg-red" style="width: {{ consumo_bar_red }}%;">
-                            {% if consumo_bar_red|float >= 8 %}{{ consumo_bar_red }}%{% endif %}
+                            {% if consumo_bar_red|float >= 16 %}{{ consumo_bar_red }}% - {{ consumo_red_kwh }} kWh{% elif consumo_bar_red|float >= 8 %}{{ consumo_bar_red }}%{% endif %}
                         </div>
                     </div>
                     <div class="legend">
@@ -357,13 +363,13 @@
                 </div>
 
                 <div class="bar-wrap">
-                    <div class="bar-title">De la generación total de los paneles: cuánto se utilizó en autoconsumo y cuánto se exportó a UTE</div>
+                    <div class="bar-title">De la generación total de los paneles: cuánto se utilizó en autoconsumo y cuánto se exportó a UTE. Total: {{ generacion_total }} kWh</div>
                     <div class="stacked-bar">
                         <div class="seg-autoconsumo" style="width: {{ generacion_bar_autoconsumo }}%;">
-                            {% if generacion_bar_autoconsumo|float >= 6 %}{{ generacion_bar_autoconsumo }}%{% endif %}
+                            {% if generacion_bar_autoconsumo|float >= 16 %}{{ generacion_bar_autoconsumo }}% - {{ generacion_autoconsumo_kwh }} kWh{% elif generacion_bar_autoconsumo|float >= 8 %}{{ generacion_bar_autoconsumo }}%{% endif %}
                         </div>
                         <div class="seg-exportada" style="width: {{ generacion_bar_exportada }}%;">
-                            {% if generacion_bar_exportada|float >= 8 %}{{ generacion_bar_exportada }}%{% endif %}
+                            {% if generacion_bar_exportada|float >= 16 %}{{ generacion_bar_exportada }}% - {{ generacion_exportada_kwh }} kWh{% elif generacion_bar_exportada|float >= 8 %}{{ generacion_bar_exportada }}%{% endif %}
                         </div>
                     </div>
                     <div class="legend">
@@ -383,9 +389,12 @@
                     Se presentan las tres opciones porque no siempre se tiene certeza de cuál es la tarifa vigente del cliente y además permite visualizar si otra tarifa podría resultar más conveniente.
                     <br><br>
                     <ul>
-                        <li><strong>Sin paneles - total</strong>: cuánto hubiera pagado el cliente en el mes si no tuviera la instalación fotovoltaica.</li>
-                        <li><strong>Con paneles - total neto</strong>: cuánto debería pagar actualmente con paneles, considerando generación solar, compra a UTE y créditos asociados.</li>
-                        <li><strong>Ahorro total</strong>: diferencia entre el escenario sin paneles y el escenario actual con paneles, más el saldo a favor en cuenta corriente cuando corresponda.</li>
+                        <li><strong>Sin paneles - hubiera pagado</strong>: cuánto hubiera pagado el cliente en el mes si no tuviera la instalación fotovoltaica.</li>
+                        <li><strong>Con paneles - pago estimado</strong>: cuánto debería pagar actualmente con paneles, considerando generación solar, compra a UTE y el efecto neto de los descuentos por venta.</li>
+                        <li><strong>Descuento en factura por venta de energía a UTE</strong>: efecto neto en la factura de la energía exportada, ya descontando IRPF 12%.</li>
+                        <li><strong>Ahorro por autoconsumo</strong>: valor económico de la energía solar que el cliente consumió directamente y por eso no tuvo que comprar a UTE.</li>
+                        <li><strong>Saldo a favor en cuenta corriente UTE</strong>: si el beneficio del mes supera el importe a pagar, la diferencia no se pierde y queda como crédito para facturas futuras.</li>
+                        <li><strong>Ahorro total</strong>: suma del ahorro por autoconsumo y del descuento neto por venta de energía a UTE.</li>
                     </ul>
                 </div>
             </div>
@@ -404,11 +413,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Sin paneles - total</td><td>${{ simple.total_sin }}</td><td>${{ doble.total_sin }}</td><td>${{ triple.total_sin }}</td></tr>
-                        <tr><td>Con paneles - total neto</td><td>${{ simple.total_con }}</td><td>${{ doble.total_con }}</td><td>${{ triple.total_con }}</td></tr>
-                        <tr><td>Crédito por energía vendida</td><td>${{ simple.credito }}</td><td>${{ doble.credito }}</td><td>${{ triple.credito }}</td></tr>
-                        <tr><td>Saldo a favor en cuenta corriente</td><td>${{ simple.saldo }}</td><td>${{ doble.saldo }}</td><td>${{ triple.saldo }}</td></tr>
-                        <tr class="total-row"><td>Ahorro total</td><td>${{ simple.ahorro_total }}</td><td>${{ doble.ahorro_total }}</td><td>${{ triple.ahorro_total }}</td></tr>
+                        <tr><td>Sin paneles - hubiera pagado</td><td>${{ simple.total_sin_int }}</td><td>${{ doble.total_sin_int }}</td><td>${{ triple.total_sin_int }}</td></tr>
+                        <tr><td>Con paneles - pago estimado</td><td>${{ simple.total_con_int }}</td><td>${{ doble.total_con_int }}</td><td>${{ triple.total_con_int }}</td></tr>
+                        <tr><td>Descuento en factura por venta de energía a UTE</td><td>${{ simple.descuento_venta_int }}</td><td>${{ doble.descuento_venta_int }}</td><td>${{ triple.descuento_venta_int }}</td></tr>
+                        <tr><td>Ahorro por autoconsumo</td><td>${{ simple.ahorro_autoconsumo_int }}</td><td>${{ doble.ahorro_autoconsumo_int }}</td><td>${{ triple.ahorro_autoconsumo_int }}</td></tr>
+                        <tr><td>Saldo a favor en cuenta corriente UTE</td><td>${{ simple.saldo_int }}</td><td>${{ doble.saldo_int }}</td><td>${{ triple.saldo_int }}</td></tr>
+                        <tr class="total-row"><td>Ahorro total</td><td>${{ simple.ahorro_total_int }}</td><td>${{ doble.ahorro_total_int }}</td><td>${{ triple.ahorro_total_int }}</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -460,13 +470,13 @@
             <div class="section-header">Interpretación del análisis económico</div>
             <div class="section-body">
                 <table class="data-table">
-                    <tr><td class="label">Sin paneles - total</td><td class="value">Monto estimado que el cliente hubiera pagado a UTE en el mes si no tuviera la instalación fotovoltaica.</td></tr>
-                    <tr><td class="label">Con paneles - total neto</td><td class="value">Monto estimado que el cliente debería pagar actualmente considerando energía solar, compra a UTE, créditos por venta y retención IRPF.</td></tr>
-                    <tr><td class="label">Crédito por energía vendida</td><td class="value">Valor económico de la energía exportada a la red y reconocida por UTE en la cuenta del cliente.</td></tr>
-                    <tr><td class="label">Saldo a favor en cuenta corriente</td><td class="value">Crédito acumulado en UTE para ser aplicado en facturas futuras. No es un ahorro adicional independiente, sino una forma en que queda registrado parte del ahorro total.</td></tr>
+                    <tr><td class="label">Sin paneles - hubiera pagado</td><td class="value">Monto estimado que el cliente hubiera pagado a UTE en el mes si no tuviera la instalación fotovoltaica.</td></tr>
+                    <tr><td class="label">Con paneles - pago estimado</td><td class="value">Monto estimado que el cliente debería pagar actualmente considerando energía solar, compra a UTE y el efecto neto de los descuentos por venta.</td></tr>
+                    <tr><td class="label">Descuento en factura por venta de energía a UTE</td><td class="value">Valor neto que reduce la factura por la energía exportada a UTE, luego de descontar la retención IRPF del 12%.</td></tr>
                     <tr><td class="label">Ahorro total</td><td class="value">Resultado económico total del sistema en el mes analizado. Se puede ver tanto desde la comparación de factura como desde la suma de sus componentes.</td></tr>
-                    <tr><td class="label">Ahorro por autoconsumo</td><td class="value">Parte del ahorro que surge de consumir directamente la energía generada por los paneles, evitando comprar esa energía a UTE.</td></tr>
+                    <tr><td class="label">Ahorro por autoconsumo</td><td class="value">Parte del ahorro que surge de consumir directamente la energía generada por los paneles, evitando comprar esa energía a UTE. En la simulación se calcula como la diferencia entre lo que se hubiera pagado sin paneles y la factura bruta con paneles antes de aplicar el descuento por venta.</td></tr>
                     <tr><td class="label">Ahorro por venta de energía a UTE</td><td class="value">Parte del ahorro que surge de exportar excedentes a la red y recibir el crédito correspondiente, neto de IRPF.</td></tr>
+                    <tr><td class="label">Saldo a favor en cuenta corriente UTE</td><td class="value">Cuando el descuento por venta supera el importe a pagar del mes, el remanente queda registrado como crédito en la cuenta corriente del cliente para facturas futuras. No es un ahorro adicional: es parte del beneficio total del mes.</td></tr>
                 </table>
             </div>
         </div>
@@ -477,7 +487,7 @@
                 <div class="note-box">
                     Este reporte presenta una <strong>simulación económica estimada</strong> en base a los datos energéticos disponibles del cliente, considerando IVA sobre energía y potencia, energía vendida sin IVA y retención IRPF sobre la energía exportada.
                     <br><br>
-                    En tarifa doble horario se asume la exportación en <strong>fuera de punta</strong>. En tarifa triple horario se asume la exportación en <strong>llano</strong>. El crédito por energía vendida del mes actual se calcula usando la exportación del <strong>mes anterior</strong>.
+                    En tarifa doble horario se asume la exportación en <strong>fuera de punta</strong>. En tarifa triple horario se asume la exportación en <strong>llano</strong>. El crédito por energía vendida del mes actual se calcula usando la exportación del <strong>mes anterior</strong>. En el cuadro comparativo, el descuento por venta se muestra <strong>neto de IRPF 12%</strong>.
                     <br><br>
                     El objetivo del reporte es mostrar con claridad cómo se compone el ahorro económico del sistema fotovoltaico, separando el impacto del <strong>autoconsumo</strong> del impacto de la <strong>venta de excedentes a UTE</strong>.
                 </div>
