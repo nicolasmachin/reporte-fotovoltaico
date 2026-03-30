@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 from pathlib import Path
 import unicodedata
 import math
@@ -21,6 +22,8 @@ from src.metrics import (
     aplicar_saldo_cuenta_corriente,
 )
 from src.storage import RUTA_HISTORICO, guardar_registro, obtener_acumulado_anual
+
+GENERAR_PDF = False
 
 MESES_ES = {
     1: "enero",
@@ -111,6 +114,48 @@ def normalizar_texto(valor):
 def slug_cliente(valor):
     texto = normalizar_texto(valor)
     return texto.replace(" ", "_")
+
+
+def obtener_ruta_chrome():
+    candidatos = [
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        shutil.which("google-chrome"),
+        shutil.which("chromium"),
+        shutil.which("chromium-browser"),
+    ]
+
+    for candidato in candidatos:
+        if candidato and Path(candidato).exists():
+            return candidato
+
+    return None
+
+
+def generar_pdf_desde_html(ruta_html, ruta_pdf):
+    chrome_path = obtener_ruta_chrome()
+    if not chrome_path:
+        print(f"AVISO: no se encontró Chrome/Chromium para generar PDF: {ruta_pdf}")
+        return False
+
+    ruta_html = Path(ruta_html).resolve()
+    ruta_pdf = Path(ruta_pdf).resolve()
+
+    comando = [
+        chrome_path,
+        "--headless=new",
+        "--disable-gpu",
+        "--allow-file-access-from-files",
+        "--no-pdf-header-footer",
+        f"--print-to-pdf={ruta_pdf}",
+        str(ruta_html),
+    ]
+
+    try:
+        subprocess.run(comando, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except subprocess.CalledProcessError:
+        print(f"AVISO: no se pudo generar PDF para {ruta_html.name}")
+        return False
 
 
 def pct(part, total):
@@ -711,15 +756,21 @@ for _, fila in df_a_procesar.iterrows():
         estado_ute=estado_ute,
         tipo_cambio_usado=fmt_decimal(tipo_cambio_usd, 1),
         notas_adicionales=notas_adicionales,
-        logo_path="../assets/logo_voltia_completo.png",
+        logo_path="../../assets/logo_voltia_completo.png",
     )
 
     carpeta_cliente = Path("reports") / slug_cliente(cliente)
-    carpeta_cliente.mkdir(exist_ok=True)
+    carpeta_html = carpeta_cliente / "html"
+    carpeta_pdf = carpeta_cliente / "pdf"
+    carpeta_html.mkdir(parents=True, exist_ok=True)
+    carpeta_pdf.mkdir(parents=True, exist_ok=True)
     nombre_archivo = f"reporte_{slug_cliente(cliente)}_{mes_calculado}.html"
-    ruta_salida = carpeta_cliente / nombre_archivo
+    ruta_salida = carpeta_html / nombre_archivo
+    ruta_pdf = carpeta_pdf / nombre_archivo.replace(".html", ".pdf")
 
     with open(ruta_salida, "w", encoding="utf-8") as f:
         f.write(html)
 
     print(f"Reporte generado: {ruta_salida}")
+    if GENERAR_PDF and generar_pdf_desde_html(ruta_salida, ruta_pdf):
+        print(f"PDF generado: {ruta_pdf}")

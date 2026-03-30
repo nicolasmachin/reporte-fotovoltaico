@@ -14,6 +14,7 @@
             margin: 0;
             color: #1f2937;
             background: #f3f6fa;
+            line-height: 1.35;
         }
 
         .page {
@@ -144,10 +145,30 @@
             font-size: 13px;
         }
 
+        .section,
+        .section-body,
+        .kpi-card,
+        .bar-wrap,
+        .note-box,
+        .alert-box,
+        .data-table,
+        .compare-table,
+        .data-table tr,
+        .compare-table tr {
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+        }
+
         .compare-table th,
         .compare-table td {
             border: 1px solid #cbd5e1;
             padding: 9px 8px;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+
+        .compare-table thead {
+            display: table-header-group;
         }
 
         .compare-table th {
@@ -198,6 +219,29 @@
 
         .empty-notes {
             min-height: 24px;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            margin: 0 0 18px 0;
+        }
+
+        .pdf-button {
+            border: none;
+            background: #0a4f86;
+            color: white;
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            border-radius: 6px;
+            box-shadow: 0 6px 14px rgba(10, 79, 134, 0.18);
+        }
+
+        .pdf-button:hover {
+            background: #083e69;
         }
 
         .footer {
@@ -304,8 +348,19 @@
         }
 
         @media print {
+            html, body {
+                background: white;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
             body {
                 background: white;
+                font-size: 11.5px;
+            }
+
+            .actions {
+                display: none;
             }
 
             .page {
@@ -314,11 +369,65 @@
                 max-width: none;
                 padding: 0;
             }
+
+            .section {
+                margin-bottom: 12px;
+            }
+
+            .section-body {
+                padding: 11px 12px;
+            }
+
+            .section-header {
+                break-after: avoid-page;
+                page-break-after: avoid;
+            }
+
+            .grid-2,
+            .grid-3 {
+                gap: 10px;
+            }
+
+            .kpi-card {
+                padding: 10px;
+                min-height: 72px;
+            }
+
+            .kpi-value {
+                font-size: 22px;
+            }
+
+            .compare-table,
+            .data-table,
+            .intro,
+            .note-box,
+            .alert-box {
+                font-size: 11.5px;
+            }
+
+            .compare-table th,
+            .compare-table td {
+                padding: 7px 6px;
+            }
+
+            .data-table td {
+                padding: 6px 5px;
+            }
+
+            .bar-title,
+            .legend,
+            .footer {
+                font-size: 11px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="page">
+
+        <div class="actions">
+            <button class="pdf-button" onclick="window.print()">Descargar en PDF</button>
+        </div>
 
         <div class="logo-wrap">
             <img src="{{ logo_path }}" alt="Voltia" class="logo">
