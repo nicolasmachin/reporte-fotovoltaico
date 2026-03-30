@@ -125,6 +125,28 @@ def calcular_factura(
     }
 
 
+def aplicar_saldo_cuenta_corriente(factura, saldo_inicial=0.0):
+    factura_ajustada = dict(factura)
+    saldo_inicial = round(float(saldo_inicial), 2)
+
+    total_neto_previo = round(float(factura["total_neto"]), 2)
+    saldo_generado_mes = round(float(factura["saldo_a_favor"]), 2)
+    saldo_aplicado = round(min(saldo_inicial, max(total_neto_previo, 0.0)), 2)
+    total_neto_final = round(max(total_neto_previo - saldo_aplicado, 0.0), 2)
+    saldo_final = round(max(saldo_inicial - saldo_aplicado + saldo_generado_mes, 0.0), 2)
+
+    factura_ajustada.update({
+        "total_neto_previo_cc": total_neto_previo,
+        "saldo_inicial": saldo_inicial,
+        "saldo_aplicado": saldo_aplicado,
+        "saldo_generado_mes": saldo_generado_mes,
+        "saldo_final": saldo_final,
+        "total_neto": total_neto_final,
+    })
+
+    return factura_ajustada
+
+
 def calcular_desglose_beneficio(factura_sin, factura_con):
     """
     Descompone el ahorro total en:

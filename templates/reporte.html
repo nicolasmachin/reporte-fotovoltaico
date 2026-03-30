@@ -182,6 +182,24 @@
             color: #334155;
         }
 
+        .additional-notes {
+            min-height: 28px;
+        }
+
+        .alert-box {
+            border: 2px solid #b91c1c;
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 14px 16px;
+            font-size: 13px;
+            line-height: 1.6;
+            font-weight: 700;
+        }
+
+        .empty-notes {
+            min-height: 24px;
+        }
+
         .footer {
             margin-top: 18px;
             padding-top: 10px;
@@ -303,7 +321,7 @@
     <div class="page">
 
         <div class="logo-wrap">
-            <img src="assets/logo_voltia_completo.png" alt="Voltia" class="logo">
+            <img src="{{ logo_path }}" alt="Voltia" class="logo">
         </div>
 
         <div class="title">Reporte mensual de rendimiento fotovoltaico</div>
@@ -316,12 +334,13 @@
                     <table class="data-table">
                         <tr><td class="label">Cliente</td><td class="value">{{ cliente }}</td></tr>
                         <tr><td class="label">Mes calculado</td><td class="value">{{ mes }}</td></tr>
-                        <tr><td class="label">Mes anterior utilizado para crédito</td><td class="value">{{ mes_anterior }}</td></tr>
+                        <tr><td class="label">Fecha habilitación UTE</td><td class="value">{{ fecha_inst }}</td></tr>
                     </table>
 
                     <table class="data-table">
                         <tr><td class="label">Potencia contratada</td><td class="value">{{ potencia }} kW</td></tr>
-                        <tr><td class="label">Perfil horario estimado</td><td class="value">P {{ pct_punta }}% · L {{ pct_llano }}% · V {{ pct_valle }}%</td></tr>
+                        <tr><td class="label">Potencia pico instalada</td><td class="value">{{ pot_inst }} kW</td></tr>
+                        <tr><td class="label">Inversión realizada</td><td class="value">USD {{ inversion }}</td></tr>
                         <tr><td class="label">Importación estimada desde red</td><td class="value">{{ importacion_red }} kWh</td></tr>
                     </table>
                 </div>
@@ -391,9 +410,12 @@
                     <ul>
                         <li><strong>Sin paneles - hubiera pagado</strong>: cuánto hubiera pagado el cliente en el mes si no tuviera la instalación fotovoltaica.</li>
                         <li><strong>Con paneles - pago estimado</strong>: cuánto debería pagar actualmente con paneles, considerando generación solar, compra a UTE y el efecto neto de los descuentos por venta.</li>
-                        <li><strong>Descuento en factura por venta de energía a UTE</strong>: efecto neto en la factura de la energía exportada, ya descontando IRPF 12%.</li>
+                        <li><strong>Descuento aplicado en factura por venta de energía a UTE</strong>: parte del beneficio neto por venta que efectivamente se usó para reducir la factura del mes.</li>
                         <li><strong>Ahorro por autoconsumo</strong>: valor económico de la energía solar que el cliente consumió directamente y por eso no tuvo que comprar a UTE.</li>
-                        <li><strong>Saldo a favor en cuenta corriente UTE</strong>: si el beneficio del mes supera el importe a pagar, la diferencia no se pierde y queda como crédito para facturas futuras.</li>
+                        <li><strong>Saldo generado este mes en cuenta corriente UTE</strong>: parte del beneficio neto por venta que no fue necesario usar en la factura del mes y quedó como crédito disponible.</li>
+                        <li><strong>Saldo inicial de cuenta corriente UTE</strong>: crédito disponible al comenzar el mes.</li>
+                        <li><strong>Saldo aplicado de cuenta corriente UTE</strong>: parte del crédito previo que se utilizó para bajar el pago del mes.</li>
+                        <li><strong>Saldo final de cuenta corriente UTE</strong>: crédito que queda disponible luego de aplicar el saldo previo y sumar el nuevo remanente del mes, si existiera.</li>
                         <li><strong>Ahorro total</strong>: suma del ahorro por autoconsumo y del descuento neto por venta de energía a UTE.</li>
                     </ul>
                 </div>
@@ -415,9 +437,12 @@
                     <tbody>
                         <tr><td>Sin paneles - hubiera pagado</td><td>${{ simple.total_sin_int }}</td><td>${{ doble.total_sin_int }}</td><td>${{ triple.total_sin_int }}</td></tr>
                         <tr><td>Con paneles - pago estimado</td><td>${{ simple.total_con_int }}</td><td>${{ doble.total_con_int }}</td><td>${{ triple.total_con_int }}</td></tr>
-                        <tr><td>Descuento en factura por venta de energía a UTE</td><td>${{ simple.descuento_venta_int }}</td><td>${{ doble.descuento_venta_int }}</td><td>${{ triple.descuento_venta_int }}</td></tr>
+                        <tr><td>Descuento aplicado en factura por venta de energía a UTE</td><td>${{ simple.descuento_venta_int }}</td><td>${{ doble.descuento_venta_int }}</td><td>${{ triple.descuento_venta_int }}</td></tr>
                         <tr><td>Ahorro por autoconsumo</td><td>${{ simple.ahorro_autoconsumo_int }}</td><td>${{ doble.ahorro_autoconsumo_int }}</td><td>${{ triple.ahorro_autoconsumo_int }}</td></tr>
-                        <tr><td>Saldo a favor en cuenta corriente UTE</td><td>${{ simple.saldo_int }}</td><td>${{ doble.saldo_int }}</td><td>${{ triple.saldo_int }}</td></tr>
+                        <tr><td>Saldo generado este mes en cuenta corriente UTE</td><td>${{ simple.saldo_generado_mes_int }}</td><td>${{ doble.saldo_generado_mes_int }}</td><td>${{ triple.saldo_generado_mes_int }}</td></tr>
+                        <tr><td>Saldo inicial de cuenta corriente UTE</td><td>${{ simple.saldo_inicial_int }}</td><td>${{ doble.saldo_inicial_int }}</td><td>${{ triple.saldo_inicial_int }}</td></tr>
+                        <tr><td>Saldo aplicado de cuenta corriente UTE</td><td>${{ simple.saldo_aplicado_int }}</td><td>${{ doble.saldo_aplicado_int }}</td><td>${{ triple.saldo_aplicado_int }}</td></tr>
+                        <tr><td>Saldo final de cuenta corriente UTE</td><td>${{ simple.saldo_int }}</td><td>${{ doble.saldo_int }}</td><td>${{ triple.saldo_int }}</td></tr>
                         <tr class="total-row"><td>Ahorro total</td><td>${{ simple.ahorro_total_int }}</td><td>${{ doble.ahorro_total_int }}</td><td>${{ triple.ahorro_total_int }}</td></tr>
                     </tbody>
                 </table>
@@ -448,36 +473,41 @@
         </div>
 
         <div class="section">
-            <div class="section-header">Acumulado anual y control UTE</div>
+            <div class="section-header">Acumulados</div>
             <div class="section-body">
-                <div class="grid-2">
-                    <table class="data-table">
-                        <tr><td class="label">Ahorro acumulado del año</td><td class="value">${{ ahorro_acumulado }}</td></tr>
-                        <tr><td class="label">Saldo acumulado en cuenta corriente</td><td class="value">${{ saldo_acumulado }}</td></tr>
-                    </table>
+                <table class="data-table">
+                    <tr><td class="label">Ahorro acumulado total</td><td class="value">${{ ahorro_acumulado }}</td></tr>
+                    <tr><td class="label">Ahorro acumulado total en USD</td><td class="value">USD {{ ahorro_acumulado_usd }}</td></tr>
+                    <tr><td class="label">Retorno de la inversión</td><td class="value">{{ retorno_inversion_pct }}%</td></tr>
+                    <tr><td class="label">Ahorro promedio histórico</td><td class="value">${{ ahorro_promedio_historico }}</td></tr>
+                    <tr><td class="label">Tiempo restante para el retorno total</td><td class="value">{{ tiempo_restante_retorno }}</td></tr>
+                    <tr><td class="label">Tiempo total de retorno de la inversión</td><td class="value">{{ tiempo_total_retorno }}</td></tr>
+                    <tr><td class="label">Mes estimado de retorno de la inversión</td><td class="value">{{ mes_retorno_estimado }}</td></tr>
+                    <tr><td class="label">Saldo acumulado en cuenta corriente</td><td class="value">${{ saldo_acumulado }}</td></tr>
+                </table>
+            </div>
+        </div>
 
-                    <table class="data-table">
-                        <tr><td class="label">Compra acumulada a UTE</td><td class="value">{{ importacion_acumulada }} kWh</td></tr>
-                        <tr><td class="label">Venta acumulada a UTE</td><td class="value">{{ exportacion_acumulada }} kWh</td></tr>
-                        <tr><td class="label">Relación venta / compra</td><td class="value">{{ ratio_ute }}%</td></tr>
-                        <tr><td class="label">Estado de control anual</td><td class="value">{{ estado_ute }}</td></tr>
-                    </table>
-                </div>
+        <div class="section">
+            <div class="section-header">Control UTE</div>
+            <div class="section-body">
+                <table class="data-table">
+                    <tr><td class="label">Compra acumulada a UTE - año en curso</td><td class="value">{{ importacion_acumulada }} kWh</td></tr>
+                    <tr><td class="label">Venta acumulada a UTE - año en curso</td><td class="value">{{ exportacion_acumulada }} kWh</td></tr>
+                    <tr><td class="label">Relación venta / compra - año en curso</td><td class="value">{{ ratio_ute }}%</td></tr>
+                    <tr><td class="label">Estado de control UTE - año en curso</td><td class="value">{{ estado_ute }}</td></tr>
+                </table>
             </div>
         </div>
 
         <div class="section">
             <div class="section-header">Interpretación del análisis económico</div>
             <div class="section-body">
-                <table class="data-table">
-                    <tr><td class="label">Sin paneles - hubiera pagado</td><td class="value">Monto estimado que el cliente hubiera pagado a UTE en el mes si no tuviera la instalación fotovoltaica.</td></tr>
-                    <tr><td class="label">Con paneles - pago estimado</td><td class="value">Monto estimado que el cliente debería pagar actualmente considerando energía solar, compra a UTE y el efecto neto de los descuentos por venta.</td></tr>
-                    <tr><td class="label">Descuento en factura por venta de energía a UTE</td><td class="value">Valor neto que reduce la factura por la energía exportada a UTE, luego de descontar la retención IRPF del 12%.</td></tr>
-                    <tr><td class="label">Ahorro total</td><td class="value">Resultado económico total del sistema en el mes analizado. Se puede ver tanto desde la comparación de factura como desde la suma de sus componentes.</td></tr>
-                    <tr><td class="label">Ahorro por autoconsumo</td><td class="value">Parte del ahorro que surge de consumir directamente la energía generada por los paneles, evitando comprar esa energía a UTE. En la simulación se calcula como la diferencia entre lo que se hubiera pagado sin paneles y la factura bruta con paneles antes de aplicar el descuento por venta.</td></tr>
-                    <tr><td class="label">Ahorro por venta de energía a UTE</td><td class="value">Parte del ahorro que surge de exportar excedentes a la red y recibir el crédito correspondiente, neto de IRPF.</td></tr>
-                    <tr><td class="label">Saldo a favor en cuenta corriente UTE</td><td class="value">Cuando el descuento por venta supera el importe a pagar del mes, el remanente queda registrado como crédito en la cuenta corriente del cliente para facturas futuras. No es un ahorro adicional: es parte del beneficio total del mes.</td></tr>
-                </table>
+                <div class="note-box">
+                    Los importes mostrados en la comparación económica son <strong>estimaciones mensuales</strong> calculadas a partir de la energía generada, la energía comprada a UTE, los descuentos netos por venta de excedentes y, cuando corresponde, la aplicación del saldo disponible en cuenta corriente.
+                    <br><br>
+                    El <strong>ahorro total</strong> del mes surge de la suma entre el ahorro por autoconsumo y el descuento neto por venta de energía a UTE. El uso de saldo previo en cuenta corriente reduce el pago estimado del mes, pero no se contabiliza como ahorro nuevo.
+                </div>
             </div>
         </div>
 
@@ -489,10 +519,29 @@
                     <br><br>
                     En tarifa doble horario se asume la exportación en <strong>fuera de punta</strong>. En tarifa triple horario se asume la exportación en <strong>llano</strong>. El crédito por energía vendida del mes actual se calcula usando la exportación del <strong>mes anterior</strong>. En el cuadro comparativo, el descuento por venta se muestra <strong>neto de IRPF 12%</strong>.
                     <br><br>
+                    Para este reporte se utilizó un tipo de cambio de <strong>{{ tipo_cambio_usado }}</strong> pesos por dólar. Ese valor queda guardado en el histórico de cada reporte para que los acumulados en USD no cambien al actualizar la constante global.
+                    <br><br>
                     En las tarifas inteligentes, la proporción del consumo atribuida a cada franja horaria se estimó de forma <strong>aproximada</strong>, ya que no contamos con el desglose real por horario y ese reparto depende de los hábitos de consumo de cada cliente.
                     <br><br>
                     El objetivo del reporte es mostrar con claridad cómo se compone el ahorro económico del sistema fotovoltaico, separando el impacto del <strong>autoconsumo</strong> del impacto de la <strong>venta de excedentes a UTE</strong>.
                 </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">Notas Adicionales</div>
+            <div class="section-body additional-notes">
+                {% if notas_adicionales %}
+                    {% for nota in notas_adicionales %}
+                        {% if nota.tipo == "alerta" %}
+                            <div class="alert-box">{{ nota.texto }}</div>
+                        {% else %}
+                            <div class="note-box">{{ nota.texto }}</div>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-notes"></div>
+                {% endif %}
             </div>
         </div>
 

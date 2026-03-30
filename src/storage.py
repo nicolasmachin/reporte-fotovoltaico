@@ -4,6 +4,84 @@ import pandas as pd
 RUTA_HISTORICO = "data/historico_clientes.xlsx"
 
 
+def _agregar_promedio_historico(df):
+    if df.empty:
+        df["ahorro_promedio_historico"] = pd.Series(dtype=float)
+        return df
+
+    df = df.copy()
+    df["mes_orden"] = pd.to_datetime(df["mes"].astype(str), format="%Y-%m", errors="coerce")
+    df = df.sort_values(by=["cliente", "mes_orden", "mes"])
+    df["ahorro_promedio_historico"] = (
+        df.groupby("cliente")["ahorro_total"]
+        .transform(lambda s: s.expanding().mean())
+        .round(2)
+    )
+    return df.drop(columns=["mes_orden"])
+
+
+def _normalizar_saldos_historicos(df):
+    if df.empty:
+        for col in ["saldo_inicial_mes", "saldo_aplicado_mes", "saldo_generado_mes"]:
+            if col not in df.columns:
+                df[col] = pd.Series(dtype=float)
+        return df
+
+    df = df.copy()
+    for col in ["saldo_inicial_mes", "saldo_aplicado_mes", "saldo_generado_mes"]:
+        if col not in df.columns:
+            df[col] = pd.Series(dtype=float)
+
+    if "saldo" not in df.columns:
+        df["saldo"] = 0.0
+
+    df["mes_orden"] = pd.to_datetime(df["mes"].astype(str), format="%Y-%m", errors="coerce")
+    df = df.sort_values(by=["cliente", "mes_orden", "mes"])
+
+    if df["saldo_generado_mes"].isna().all():
+        df["saldo_generado_mes"] = df["saldo"].fillna(0.0)
+
+    df["saldo_aplicado_mes"] = df["saldo_aplicado_mes"].fillna(0.0)
+
+    saldo_iniciales = []
+    saldo_finales = []
+
+    for _, grupo in df.groupby("cliente", sort=False):
+        saldo_corriente = 0.0
+        for _, fila in grupo.iterrows():
+            saldo_iniciales.append(round(saldo_corriente, 2))
+            saldo_generado = float(fila["saldo_generado_mes"]) if not pd.isna(fila["saldo_generado_mes"]) else 0.0
+            saldo_aplicado = float(fila["saldo_aplicado_mes"]) if not pd.isna(fila["saldo_aplicado_mes"]) else 0.0
+            saldo_corriente = round(max(saldo_corriente - saldo_aplicado + saldo_generado, 0.0), 2)
+            saldo_finales.append(saldo_corriente)
+
+    df["saldo_inicial_mes"] = saldo_iniciales
+    df["saldo"] = saldo_finales
+
+    return df.drop(columns=["mes_orden"])
+
+
+def _asegurar_columnas_historicas(df, tipo_cambio_default=None):
+    df = df.copy()
+
+    if "tipo_cambio_usd" not in df.columns:
+        df["tipo_cambio_usd"] = pd.Series(dtype=float)
+
+    if "ahorro_total_usd" not in df.columns:
+        df["ahorro_total_usd"] = pd.Series(dtype=float)
+
+    if tipo_cambio_default is not None and "tipo_cambio_usd" in df.columns:
+        faltantes_tc = df["tipo_cambio_usd"].isna() & df["ahorro_total_usd"].notna()
+        df.loc[faltantes_tc, "tipo_cambio_usd"] = tipo_cambio_default
+
+    faltantes_usd = df["ahorro_total_usd"].isna() & df["ahorro_total"].notna() & df["tipo_cambio_usd"].notna() & (df["tipo_cambio_usd"] != 0)
+    df.loc[faltantes_usd, "ahorro_total_usd"] = (
+        df.loc[faltantes_usd, "ahorro_total"] / df.loc[faltantes_usd, "tipo_cambio_usd"]
+    ).round(2)
+
+    return _normalizar_saldos_historicos(df)
+
+
 def guardar_registro(cliente, mes, data):
     columnas = [
         "cliente",
@@ -16,7 +94,13 @@ def guardar_registro(cliente, mes, data):
         "ahorro_autoconsumo",
         "ahorro_venta",
         "ahorro_total",
+        "ahorro_total_usd",
         "saldo",
+        "saldo_inicial_mes",
+        "saldo_aplicado_mes",
+        "saldo_generado_mes",
+        "tipo_cambio_usd",
+        "ahorro_promedio_historico",
     ]
 
     nuevo = pd.DataFrame([{
@@ -30,22 +114,30 @@ def guardar_registro(cliente, mes, data):
         "ahorro_autoconsumo": data["ahorro_autoconsumo"],
         "ahorro_venta": data["ahorro_venta"],
         "ahorro_total": data["ahorro_total"],
-        "saldo": data["saldo"],
+        "ahorro_total_usd": data["ahorro_total_usd"],
+        "saldo": data["saldo_final"],
+        "saldo_inicial_mes": data["saldo_inicial"],
+        "saldo_aplicado_mes": data["saldo_aplicado"],
+        "saldo_generado_mes": data["saldo_generado_mes"],
+        "tipo_cambio_usd": data["tipo_cambio_usd"],
+        "ahorro_promedio_historico": data["ahorro_total"],
     }])
 
     if not os.path.exists(RUTA_HISTORICO):
+        nuevo = _agregar_promedio_historico(nuevo)
         nuevo[columnas].to_excel(RUTA_HISTORICO, sheet_name="historico", index=False)
         return
 
     df = pd.read_excel(RUTA_HISTORICO, sheet_name="historico")
+    df = _asegurar_columnas_historicas(df, data["tipo_cambio_usd"])
 
     # elimina duplicado mismo cliente+mes si existiera
     df = df[~((df["cliente"] == cliente) & (df["mes"] == mes))]
 
     df = pd.concat([df, nuevo], ignore_index=True)
-    df = df.sort_values(by=["cliente", "mes"])
+    df = _agregar_promedio_historico(df)
 
-    df.to_excel(RUTA_HISTORICO, sheet_name="historico", index=False)
+    df[columnas].to_excel(RUTA_HISTORICO, sheet_name="historico", index=False)
 
 
 def obtener_acumulado_anual(cliente, anio):
@@ -53,6 +145,9 @@ def obtener_acumulado_anual(cliente, anio):
         return None
 
     df = pd.read_excel(RUTA_HISTORICO, sheet_name="historico")
+    df = _asegurar_columnas_historicas(df)
+    if "ahorro_promedio_historico" not in df.columns:
+        df = _agregar_promedio_historico(df)
     df = df[df["cliente"] == cliente].copy()
 
     if df.empty:
@@ -64,9 +159,19 @@ def obtener_acumulado_anual(cliente, anio):
     if df_anio.empty:
         return None
 
+    ahorro_promedio_historico = round(df["ahorro_total"].dropna().mean(), 2)
+    meses_con_usd = int(df["ahorro_total_usd"].dropna().shape[0])
+    ahorro_promedio_historico_usd = 0.0
+    if meses_con_usd > 0:
+        ahorro_promedio_historico_usd = round(df["ahorro_total_usd"].dropna().mean(), 2)
+
     return {
-        "ahorro_total": round(df_anio["ahorro_total"].sum(), 2),
-        "saldo_total": round(df_anio["saldo"].sum(), 2),
+        "ahorro_total": round(df["ahorro_total"].sum(), 2),
+        "ahorro_total_usd": round(df["ahorro_total_usd"].dropna().sum(), 2),
+        "saldo_total": round(df.sort_values(by=["mes"]).iloc[-1]["saldo"], 2),
         "exportacion_total": round(df_anio["exportacion_kwh"].sum(), 2),
         "importacion_total": round(df_anio["importacion_kwh"].sum(), 2),
+        "ahorro_promedio_historico": ahorro_promedio_historico,
+        "ahorro_promedio_historico_usd": ahorro_promedio_historico_usd,
+        "meses_con_datos_usd": meses_con_usd,
     }
