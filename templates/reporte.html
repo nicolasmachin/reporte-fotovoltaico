@@ -6,7 +6,7 @@
     <style>
         @page {
             size: A4;
-            margin: 18mm;
+            margin: 14mm;
         }
 
         body {
@@ -46,14 +46,14 @@
 
         .subtitle {
             text-align: center;
-            margin: 0 0 22px 0;
+            margin: 0 0 16px 0;
             font-size: 14px;
             color: #4b5563;
         }
 
         .section {
             border: 1.5px solid #2e3a46;
-            margin-bottom: 18px;
+            margin-bottom: 14px;
             background: #ffffff;
         }
 
@@ -68,19 +68,19 @@
         }
 
         .section-body {
-            padding: 14px 16px;
+            padding: 12px 14px;
         }
 
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 18px;
+            gap: 14px;
         }
 
         .grid-3 {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 14px;
+            gap: 12px;
         }
 
         .data-table {
@@ -113,21 +113,128 @@
         .kpi-card {
             border: 1px solid #d6dde6;
             background: #f8fbff;
-            padding: 14px 12px;
-            min-height: 88px;
+            padding: 12px 10px;
+            min-height: 80px;
+        }
+
+        .roi-highlight {
+            border: 2px solid #0a4f86;
+            background: linear-gradient(135deg, #eef6ff 0%, #dbeafe 100%);
+            padding: 18px 20px;
+        }
+
+        .roi-topline {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 16px;
+            margin-bottom: 10px;
+        }
+
+        .roi-copy {
+            flex: 1;
+        }
+
+        .roi-eyebrow {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.7px;
+            text-transform: uppercase;
+            color: #0a4f86;
+            margin-bottom: 4px;
+        }
+
+        .roi-headline {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.15;
+            color: #083e69;
+            margin: 0;
+        }
+
+        .roi-subtitle {
+            margin-top: 6px;
+            font-size: 13px;
+            color: #1d4f7a;
+        }
+
+        .roi-big-number {
+            font-size: 42px;
+            font-weight: 800;
+            line-height: 1;
+            color: #083e69;
+            white-space: nowrap;
+        }
+
+        .roi-progress {
+            width: 100%;
+            height: 28px;
+            background: #c7dbef;
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid #93b9df;
+        }
+
+        .roi-progress-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+            box-sizing: border-box;
+            background: linear-gradient(90deg, #083e69 0%, #062f50 100%);
+            color: white;
+            font-size: 12px;
+            font-weight: 800;
+            min-width: 0;
+        }
+
+        .roi-progress-fill.is-small {
+            justify-content: flex-start;
+            padding-left: 12px;
+            padding-right: 0;
+        }
+
+        .roi-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .roi-stat {
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid #bfd7ef;
+            padding: 10px 12px;
+            border-radius: 8px;
+        }
+
+        .roi-stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #0a4f86;
+            margin-bottom: 4px;
+        }
+
+        .roi-stat-value {
+            font-size: 18px;
+            font-weight: 800;
+            color: #083e69;
         }
 
         .kpi-label {
             font-size: 12px;
             text-transform: uppercase;
             color: #64748b;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 700;
             letter-spacing: 0.4px;
         }
 
         .kpi-value {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 700;
             color: #0a4f86;
             line-height: 1.1;
@@ -137,6 +244,69 @@
             font-size: 13px;
             color: #475569;
             margin-top: 4px;
+        }
+
+        .summary-card {
+            border: 1px solid #c9dff3;
+            background: #f8fbff;
+            padding: 12px 12px 10px 12px;
+            min-height: 106px;
+        }
+
+        .summary-card-cost {
+            background: #edf5fd;
+        }
+
+        .summary-card-current {
+            background: #e3f0fb;
+        }
+
+        .summary-card-savings {
+            background: linear-gradient(135deg, #0a4f86 0%, #083e69 100%);
+            border-color: #083e69;
+            color: white;
+        }
+
+        .summary-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #4b5563;
+            margin-bottom: 8px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+        }
+
+        .summary-card-savings .summary-title {
+            color: #dbeafe;
+        }
+
+        .summary-lines {
+            display: grid;
+            gap: 4px;
+        }
+
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .summary-line-label {
+            font-weight: 700;
+            color: #334155;
+        }
+
+        .summary-line-value {
+            font-weight: 800;
+            color: #083e69;
+            white-space: nowrap;
+        }
+
+        .summary-card-savings .summary-line-label,
+        .summary-card-savings .summary-line-value {
+            color: white;
         }
 
         .compare-table {
@@ -192,6 +362,31 @@
             background: #f1f7fd;
             font-weight: 700;
             color: #0a4f86;
+        }
+
+        .compare-row-emphasis td {
+            font-weight: 700;
+        }
+
+        .compare-row-cost td {
+            background: #e8f1fb;
+            color: #083e69;
+        }
+
+        .compare-row-current td {
+            background: #d8e9f8;
+            color: #062f50;
+        }
+
+        .compare-row-savings td {
+            background: #0a4f86;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .compare-row-savings td:first-child {
+            color: #ffffff;
         }
 
         .note-box {
@@ -269,8 +464,8 @@
         }
 
         .bar-wrap {
-            margin-top: 10px;
-            margin-bottom: 18px;
+            margin-top: 8px;
+            margin-bottom: 14px;
         }
 
         .bar-title {
@@ -356,7 +551,7 @@
 
             body {
                 background: white;
-                font-size: 11.5px;
+                font-size: 10.8px;
             }
 
             .actions {
@@ -370,12 +565,32 @@
                 padding: 0;
             }
 
+            .logo {
+                max-width: 230px;
+                max-height: 86px;
+            }
+
+            .title {
+                margin: 6px 0 2px 0;
+                font-size: 19px;
+            }
+
+            .subtitle {
+                margin: 0 0 10px 0;
+                font-size: 12px;
+            }
+
             .section {
-                margin-bottom: 12px;
+                margin-bottom: 8px;
             }
 
             .section-body {
-                padding: 11px 12px;
+                padding: 8px 9px;
+            }
+
+            .section-header {
+                padding: 7px 10px;
+                font-size: 12px;
             }
 
             .section-header {
@@ -385,16 +600,81 @@
 
             .grid-2,
             .grid-3 {
-                gap: 10px;
+                gap: 8px;
             }
 
             .kpi-card {
-                padding: 10px;
-                min-height: 72px;
+                padding: 8px;
+                min-height: 60px;
             }
 
             .kpi-value {
-                font-size: 22px;
+                font-size: 18px;
+            }
+
+            .kpi-label {
+                margin-bottom: 4px;
+                font-size: 11px;
+            }
+
+            .kpi-unit {
+                font-size: 11px;
+                margin-top: 2px;
+            }
+
+            .roi-headline {
+                font-size: 17px;
+            }
+
+            .roi-big-number {
+                font-size: 30px;
+            }
+
+            .roi-progress {
+                height: 20px;
+            }
+
+            .roi-stat-value {
+                font-size: 14px;
+            }
+
+            .roi-highlight {
+                padding: 14px 16px;
+            }
+
+            .roi-topline {
+                margin-bottom: 8px;
+            }
+
+            .roi-subtitle {
+                font-size: 12px;
+            }
+
+            .roi-stats {
+                gap: 8px;
+                margin-top: 10px;
+            }
+
+            .roi-stat {
+                padding: 8px 10px;
+            }
+
+            .summary-card {
+                padding: 10px 10px 8px 10px;
+                min-height: 92px;
+            }
+
+            .summary-title {
+                font-size: 11px;
+                margin-bottom: 6px;
+            }
+
+            .summary-line {
+                font-size: 11px;
+            }
+
+            .summary-lines {
+                gap: 3px;
             }
 
             .compare-table,
@@ -450,28 +730,96 @@
                         <tr><td class="label">Potencia contratada</td><td class="value">{{ potencia }} kW</td></tr>
                         <tr><td class="label">Potencia pico instalada</td><td class="value">{{ pot_inst }} kW</td></tr>
                         <tr><td class="label">Inversión realizada</td><td class="value">USD {{ inversion }}</td></tr>
-                        <tr><td class="label">Importación estimada desde red</td><td class="value">{{ importacion_red }} kWh</td></tr>
                     </table>
                 </div>
             </div>
         </div>
 
-        <div class="section">
-            <div class="section-header">Resumen energético</div>
-            <div class="section-body">
-                <div class="grid-3">
-                    <div class="kpi-card"><div class="kpi-label">Generación</div><div class="kpi-value">{{ generacion }}</div><div class="kpi-unit">kWh</div></div>
-                    <div class="kpi-card"><div class="kpi-label">Consumo total</div><div class="kpi-value">{{ consumo }}</div><div class="kpi-unit">kWh</div></div>
-                    <div class="kpi-card"><div class="kpi-label">Autoconsumo</div><div class="kpi-value">{{ autoconsumo }}</div><div class="kpi-unit">kWh</div></div>
-                    <div class="kpi-card"><div class="kpi-label">Exportación mes actual</div><div class="kpi-value">{{ exportacion_actual }}</div><div class="kpi-unit">kWh</div></div>
-                    <div class="kpi-card"><div class="kpi-label">Exportación mes anterior</div><div class="kpi-value">{{ exportacion_anterior }}</div><div class="kpi-unit">kWh</div></div>
-                    <div class="kpi-card"><div class="kpi-label">Autoconsumo sobre consumo</div><div class="kpi-value">{{ autoconsumo_sobre_consumo }}%</div><div class="kpi-unit">del consumo del mes</div></div>
+        <div class="section roi-highlight">
+            <div class="roi-topline">
+                <div class="roi-copy">
+                    <div class="roi-eyebrow">Retorno de la inversión</div>
+                    <p class="roi-headline">Ya recuperaste {{ retorno_inversion_pct }}% de la inversión de tu sistema fotovoltaico.</p>
+                    <div class="roi-subtitle">Tu instalación ya te devolvió <strong>USD {{ inversion_recuperada_usd }}</strong> y restan <strong>USD {{ inversion_faltante_usd }}</strong> para completar el retorno.</div>
+                </div>
+                <div class="roi-big-number">{{ retorno_inversion_pct }}%</div>
+            </div>
+
+            <div class="roi-progress">
+                <div class="roi-progress-fill{% if roi_barra_pct < 18 %} is-small{% endif %}" style="width: {{ roi_barra_pct }}%;">
+                    {% if roi_barra_pct >= 12 %}{{ retorno_inversion_pct }}%{% endif %}
+                </div>
+            </div>
+
+            <div class="roi-stats">
+                <div class="roi-stat">
+                    <div class="roi-stat-label">Inversión</div>
+                    <div class="roi-stat-value">USD {{ inversion }}</div>
+                </div>
+                <div class="roi-stat">
+                    <div class="roi-stat-label">Ahorro acumulado</div>
+                    <div class="roi-stat-value">USD {{ ahorro_acumulado_usd }}</div>
+                </div>
+                <div class="roi-stat">
+                    <div class="roi-stat-label">Tiempo restante</div>
+                    <div class="roi-stat-value">{{ tiempo_restante_retorno }}</div>
                 </div>
             </div>
         </div>
 
         <div class="section">
-            <div class="section-header">Distribución de la energía</div>
+            <div class="section-header">Resumen económico mes de {{ mes|upper }}</div>
+            <div class="section-body">
+                <div class="grid-3">
+                    <div class="summary-card summary-card-cost">
+                        <div class="summary-title">Sin paneles - hubiera pagado</div>
+                        <div class="summary-lines">
+                            <div class="summary-line"><span class="summary-line-label">Tarifa simple</span><span class="summary-line-value">${{ simple.total_sin_int }}</span></div>
+                            <div class="summary-line"><span class="summary-line-label">Tarifa doble</span><span class="summary-line-value">${{ doble.total_sin_int }}</span></div>
+                            <div class="summary-line"><span class="summary-line-label">Tarifa triple</span><span class="summary-line-value">${{ triple.total_sin_int }}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="summary-card summary-card-current">
+                        <div class="summary-title">Con paneles - pago estimado</div>
+                        <div class="summary-lines">
+                            <div class="summary-line"><span class="summary-line-label">Tarifa simple</span><span class="summary-line-value">${{ simple.total_con_int }}</span></div>
+                            <div class="summary-line"><span class="summary-line-label">Tarifa doble</span><span class="summary-line-value">${{ doble.total_con_int }}</span></div>
+                            <div class="summary-line"><span class="summary-line-label">Tarifa triple</span><span class="summary-line-value">${{ triple.total_con_int }}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="summary-card summary-card-savings">
+                        <div class="summary-title">Ahorro total</div>
+                        <div class="summary-lines">
+                            <div class="summary-line"><span class="summary-line-label">Tarifa simple</span><span class="summary-line-value">${{ simple.ahorro_total_int }}</span></div>
+                            <div class="summary-line"><span class="summary-line-label">Tarifa doble</span><span class="summary-line-value">${{ doble.ahorro_total_int }}</span></div>
+                            <div class="summary-line"><span class="summary-line-label">Tarifa triple</span><span class="summary-line-value">${{ triple.ahorro_total_int }}</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">Resumen energético mes de {{ mes|upper }}</div>
+            <div class="section-body">
+                <div class="intro" style="margin-bottom: 10px;">
+                    Todos los indicadores a continuación corresponden a datos mensuales del período analizado: <strong>{{ mes }}</strong>.
+                </div>
+                <div class="grid-3">
+                    <div class="kpi-card"><div class="kpi-label">Generación</div><div class="kpi-value">{{ generacion }}</div><div class="kpi-unit">kWh</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Consumo total</div><div class="kpi-value">{{ consumo }}</div><div class="kpi-unit">kWh</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Autoconsumo</div><div class="kpi-value">{{ autoconsumo }}</div><div class="kpi-unit">kWh</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Importación desde UTE</div><div class="kpi-value">{{ importacion_red }}</div><div class="kpi-unit">kWh</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Exportación mes actual</div><div class="kpi-value">{{ exportacion_actual }}</div><div class="kpi-unit">kWh</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Exportación mes anterior</div><div class="kpi-value">{{ exportacion_anterior }}</div><div class="kpi-unit">kWh</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">Distribución de la energía mes de {{ mes|upper }}</div>
             <div class="section-body">
 
                 <div class="bar-wrap">
@@ -544,15 +892,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Sin paneles - hubiera pagado</td><td>${{ simple.total_sin_int }}</td><td>${{ doble.total_sin_int }}</td><td>${{ triple.total_sin_int }}</td></tr>
-                        <tr><td>Con paneles - pago estimado</td><td>${{ simple.total_con_int }}</td><td>${{ doble.total_con_int }}</td><td>${{ triple.total_con_int }}</td></tr>
+                        <tr class="compare-row-emphasis compare-row-cost"><td>Sin paneles - hubiera pagado</td><td>${{ simple.total_sin_int }}</td><td>${{ doble.total_sin_int }}</td><td>${{ triple.total_sin_int }}</td></tr>
+                        <tr class="compare-row-emphasis compare-row-current"><td>Con paneles - pago estimado</td><td>${{ simple.total_con_int }}</td><td>${{ doble.total_con_int }}</td><td>${{ triple.total_con_int }}</td></tr>
                         <tr><td>Descuento aplicado en factura por venta de energía a UTE</td><td>${{ simple.descuento_venta_int }}</td><td>${{ doble.descuento_venta_int }}</td><td>${{ triple.descuento_venta_int }}</td></tr>
                         <tr><td>Ahorro por autoconsumo</td><td>${{ simple.ahorro_autoconsumo_int }}</td><td>${{ doble.ahorro_autoconsumo_int }}</td><td>${{ triple.ahorro_autoconsumo_int }}</td></tr>
                         <tr><td>Saldo generado este mes en cuenta corriente UTE</td><td>${{ simple.saldo_generado_mes_int }}</td><td>${{ doble.saldo_generado_mes_int }}</td><td>${{ triple.saldo_generado_mes_int }}</td></tr>
                         <tr><td>Saldo inicial de cuenta corriente UTE</td><td>${{ simple.saldo_inicial_int }}</td><td>${{ doble.saldo_inicial_int }}</td><td>${{ triple.saldo_inicial_int }}</td></tr>
                         <tr><td>Saldo aplicado de cuenta corriente UTE</td><td>${{ simple.saldo_aplicado_int }}</td><td>${{ doble.saldo_aplicado_int }}</td><td>${{ triple.saldo_aplicado_int }}</td></tr>
                         <tr><td>Saldo final de cuenta corriente UTE</td><td>${{ simple.saldo_int }}</td><td>${{ doble.saldo_int }}</td><td>${{ triple.saldo_int }}</td></tr>
-                        <tr class="total-row"><td>Ahorro total</td><td>${{ simple.ahorro_total_int }}</td><td>${{ doble.ahorro_total_int }}</td><td>${{ triple.ahorro_total_int }}</td></tr>
+                        <tr class="total-row compare-row-savings"><td>Ahorro total</td><td>${{ simple.ahorro_total_int }}</td><td>${{ doble.ahorro_total_int }}</td><td>${{ triple.ahorro_total_int }}</td></tr>
                     </tbody>
                 </table>
             </div>

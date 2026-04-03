@@ -24,8 +24,8 @@ from src.metrics import (
 from src.storage import RUTA_HISTORICO, guardar_registro, obtener_acumulado_anual
 
 GENERAR_PDF = True
-TESTING = False
-CLIENTE_TESTING = "Fernando"
+TESTING = True
+CLIENTE_TESTING = "BARENOF"
 
 MESES_ES = {
     1: "enero",
@@ -410,7 +410,7 @@ for _, fila in df_a_procesar.iterrows():
 
     if not historial_cliente_previo.empty:
         consumo_promedio_historico = float(historial_cliente_previo["consumo_kwh"].mean())
-        if consumo_promedio_historico > 0 and consumo > (consumo_promedio_historico * 1.5):
+        if consumo_promedio_historico > 0 and consumo > (consumo_promedio_historico * 1.30):
             aumento_pct = round(((consumo / consumo_promedio_historico) - 1) * 100, 0)
             notas_adicionales.append({
                 "tipo": "alerta",
@@ -635,6 +635,10 @@ for _, fila in df_a_procesar.iterrows():
             fecha_retorno = mes_dt + pd.DateOffset(months=meses_adicionales)
             mes_retorno_estimado = formatear_mes_es(fecha_retorno)
 
+    roi_barra_pct = max(0.0, min(retorno_inversion_pct, 100.0))
+    inversion_recuperada_usd = min(ahorro_acumulado_usd, inversion) if inversion > 0 else 0.0
+    inversion_faltante_usd = max(inversion - ahorro_acumulado_usd, 0.0) if inversion > 0 else 0.0
+
     descuento_venta_simple_factura = max(desglose_simple["ahorro_venta"] - factura_simple_con_ajustada["saldo_generado_mes"], 0.0)
     descuento_venta_doble_factura = max(desglose_doble["ahorro_venta"] - factura_doble_con_ajustada["saldo_generado_mes"], 0.0)
     descuento_venta_triple_factura = max(desglose_triple["ahorro_venta"] - factura_triple_con_ajustada["saldo_generado_mes"], 0.0)
@@ -759,6 +763,9 @@ for _, fila in df_a_procesar.iterrows():
         ahorro_acumulado_usd=fmt(ahorro_acumulado_usd),
         ahorro_promedio_historico=fmt(ahorro_promedio_historico),
         retorno_inversion_pct=fmt_pct(retorno_inversion_pct),
+        roi_barra_pct=round(roi_barra_pct, 1),
+        inversion_recuperada_usd=fmt(inversion_recuperada_usd),
+        inversion_faltante_usd=fmt(inversion_faltante_usd),
         tiempo_restante_retorno=tiempo_restante_retorno,
         tiempo_total_retorno=tiempo_total_retorno,
         mes_retorno_estimado=mes_retorno_estimado,
