@@ -23,7 +23,9 @@ from src.metrics import (
 )
 from src.storage import RUTA_HISTORICO, guardar_registro, obtener_acumulado_anual
 
-GENERAR_PDF = False
+GENERAR_PDF = True
+TESTING = False
+CLIENTE_TESTING = "Fernando"
 
 MESES_ES = {
     1: "enero",
@@ -365,6 +367,17 @@ saldos_cuenta_corriente = calcular_saldos_cuenta_corriente(df_clientes)
 df_a_procesar = df_mes_actual.copy()
 if procesar_historico_completo:
     df_a_procesar = df_clientes.sort_values(by=["mes", "cliente"]).copy()
+
+if TESTING:
+    cliente_testing_normalizado = normalizar_texto(CLIENTE_TESTING)
+    df_a_procesar = df_a_procesar[
+        df_a_procesar["cliente"].astype(str).map(normalizar_texto) == cliente_testing_normalizado
+    ].copy()
+
+    if df_a_procesar.empty:
+        raise ValueError(
+            f"No se encontró el cliente de testing '{CLIENTE_TESTING}' en los datos a procesar."
+        )
 
 for _, fila in df_a_procesar.iterrows():
     cliente = str(fila["cliente"]).strip()
