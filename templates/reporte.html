@@ -774,27 +774,27 @@
                     <div class="summary-card summary-card-cost">
                         <div class="summary-title">Sin paneles - hubiera pagado</div>
                         <div class="summary-lines">
-                            <div class="summary-line"><span class="summary-line-label">Tarifa simple</span><span class="summary-line-value">${{ simple.total_sin_int }}</span></div>
-                            <div class="summary-line"><span class="summary-line-label">Tarifa doble</span><span class="summary-line-value">${{ doble.total_sin_int }}</span></div>
-                            <div class="summary-line"><span class="summary-line-label">Tarifa triple</span><span class="summary-line-value">${{ triple.total_sin_int }}</span></div>
+                            {% for tarifa in tarifas_mostradas %}
+                            <div class="summary-line"><span class="summary-line-label">{{ tarifa.label }}</span><span class="summary-line-value">${{ tarifa.total_sin }}</span></div>
+                            {% endfor %}
                         </div>
                     </div>
 
                     <div class="summary-card summary-card-current">
                         <div class="summary-title">Con paneles - pago estimado</div>
                         <div class="summary-lines">
-                            <div class="summary-line"><span class="summary-line-label">Tarifa simple</span><span class="summary-line-value">${{ simple.total_con_int }}</span></div>
-                            <div class="summary-line"><span class="summary-line-label">Tarifa doble</span><span class="summary-line-value">${{ doble.total_con_int }}</span></div>
-                            <div class="summary-line"><span class="summary-line-label">Tarifa triple</span><span class="summary-line-value">${{ triple.total_con_int }}</span></div>
+                            {% for tarifa in tarifas_mostradas %}
+                            <div class="summary-line"><span class="summary-line-label">{{ tarifa.label }}</span><span class="summary-line-value">${{ tarifa.total_con }}</span></div>
+                            {% endfor %}
                         </div>
                     </div>
 
                     <div class="summary-card summary-card-savings">
                         <div class="summary-title">Ahorro total</div>
                         <div class="summary-lines">
-                            <div class="summary-line"><span class="summary-line-label">Tarifa simple</span><span class="summary-line-value">${{ simple.ahorro_total_int }}</span></div>
-                            <div class="summary-line"><span class="summary-line-label">Tarifa doble</span><span class="summary-line-value">${{ doble.ahorro_total_int }}</span></div>
-                            <div class="summary-line"><span class="summary-line-label">Tarifa triple</span><span class="summary-line-value">${{ triple.ahorro_total_int }}</span></div>
+                            {% for tarifa in tarifas_mostradas %}
+                            <div class="summary-line"><span class="summary-line-label">{{ tarifa.label }}</span><span class="summary-line-value">${{ tarifa.ahorro_total }}</span></div>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -861,9 +861,14 @@
             <div class="section-header">Cómo leer la comparación económica</div>
             <div class="section-body">
                 <div class="intro">
+                    {% if es_empresa %}
+                    En el cuadro siguiente se muestra el análisis económico de la <strong>{{ tarifa_contratada_label|lower }}</strong> del cliente, que es la tarifa actualmente configurada para este suministro.
+                    <br><br>
+                    {% else %}
                     En el cuadro siguiente se muestra una <strong>comparativa de las tres tarifas residenciales posibles de UTE</strong>: simple, doble horario y triple horario.
                     Se presentan las tres opciones porque no siempre se tiene certeza de cuál es la tarifa vigente del cliente y además permite visualizar si otra tarifa podría resultar más conveniente.
                     <br><br>
+                    {% endif %}
                     <ul>
                         <li><strong>Sin paneles - hubiera pagado</strong>: cuánto hubiera pagado el cliente en el mes si no tuviera la instalación fotovoltaica.</li>
                         <li><strong>Con paneles - pago estimado</strong>: cuánto debería pagar actualmente con paneles, considerando generación solar, compra a UTE y el efecto neto de los descuentos por venta.</li>
@@ -880,27 +885,27 @@
         </div>
 
         <div class="section">
-            <div class="section-header">Resumen económico comparativo</div>
+            <div class="section-header">{% if es_empresa %}Resumen económico según tarifa contratada{% else %}Resumen económico comparativo{% endif %}</div>
             <div class="section-body">
                 <table class="compare-table">
                     <thead>
                         <tr>
                             <th>Concepto</th>
-                            <th>Tarifa simple</th>
-                            <th>Tarifa doble horario</th>
-                            <th>Tarifa triple horario</th>
+                            {% for tarifa in tarifas_mostradas %}
+                            <th>{{ tarifa.label }}</th>
+                            {% endfor %}
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="compare-row-emphasis compare-row-cost"><td>Sin paneles - hubiera pagado</td><td>${{ simple.total_sin_int }}</td><td>${{ doble.total_sin_int }}</td><td>${{ triple.total_sin_int }}</td></tr>
-                        <tr class="compare-row-emphasis compare-row-current"><td>Con paneles - pago estimado</td><td>${{ simple.total_con_int }}</td><td>${{ doble.total_con_int }}</td><td>${{ triple.total_con_int }}</td></tr>
-                        <tr><td>Descuento aplicado en factura por venta de energía a UTE</td><td>${{ simple.descuento_venta_int }}</td><td>${{ doble.descuento_venta_int }}</td><td>${{ triple.descuento_venta_int }}</td></tr>
-                        <tr><td>Ahorro por autoconsumo</td><td>${{ simple.ahorro_autoconsumo_int }}</td><td>${{ doble.ahorro_autoconsumo_int }}</td><td>${{ triple.ahorro_autoconsumo_int }}</td></tr>
-                        <tr><td>Saldo generado este mes en cuenta corriente UTE</td><td>${{ simple.saldo_generado_mes_int }}</td><td>${{ doble.saldo_generado_mes_int }}</td><td>${{ triple.saldo_generado_mes_int }}</td></tr>
-                        <tr><td>Saldo inicial de cuenta corriente UTE</td><td>${{ simple.saldo_inicial_int }}</td><td>${{ doble.saldo_inicial_int }}</td><td>${{ triple.saldo_inicial_int }}</td></tr>
-                        <tr><td>Saldo aplicado de cuenta corriente UTE</td><td>${{ simple.saldo_aplicado_int }}</td><td>${{ doble.saldo_aplicado_int }}</td><td>${{ triple.saldo_aplicado_int }}</td></tr>
-                        <tr><td>Saldo final de cuenta corriente UTE</td><td>${{ simple.saldo_int }}</td><td>${{ doble.saldo_int }}</td><td>${{ triple.saldo_int }}</td></tr>
-                        <tr class="total-row compare-row-savings"><td>Ahorro total</td><td>${{ simple.ahorro_total_int }}</td><td>${{ doble.ahorro_total_int }}</td><td>${{ triple.ahorro_total_int }}</td></tr>
+                        <tr class="compare-row-emphasis compare-row-cost"><td>Sin paneles - hubiera pagado</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.total_sin }}</td>{% endfor %}</tr>
+                        <tr class="compare-row-emphasis compare-row-current"><td>Con paneles - pago estimado</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.total_con }}</td>{% endfor %}</tr>
+                        <tr><td>Descuento aplicado en factura por venta de energía a UTE</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.descuento_venta }}</td>{% endfor %}</tr>
+                        <tr><td>Ahorro por autoconsumo</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.ahorro_autoconsumo }}</td>{% endfor %}</tr>
+                        <tr><td>Saldo generado este mes en cuenta corriente UTE</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.saldo_generado_mes }}</td>{% endfor %}</tr>
+                        <tr><td>Saldo inicial de cuenta corriente UTE</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.saldo_inicial }}</td>{% endfor %}</tr>
+                        <tr><td>Saldo aplicado de cuenta corriente UTE</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.saldo_aplicado }}</td>{% endfor %}</tr>
+                        <tr><td>Saldo final de cuenta corriente UTE</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.saldo_final }}</td>{% endfor %}</tr>
+                        <tr class="total-row compare-row-savings"><td>Ahorro total</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.ahorro_total }}</td>{% endfor %}</tr>
                     </tbody>
                 </table>
             </div>
@@ -913,17 +918,17 @@
                     <thead>
                         <tr>
                             <th>Concepto</th>
-                            <th>Tarifa simple</th>
-                            <th>Tarifa doble horario</th>
-                            <th>Tarifa triple horario</th>
+                            {% for tarifa in tarifas_mostradas %}
+                            <th>{{ tarifa.label }}</th>
+                            {% endfor %}
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Ahorro por autoconsumo</td><td>${{ simple.ahorro_autoconsumo_int }}</td><td>${{ doble.ahorro_autoconsumo_int }}</td><td>${{ triple.ahorro_autoconsumo_int }}</td></tr>
-                        <tr><td>Ahorro por venta de energía a UTE</td><td>${{ simple.ahorro_venta_int }}</td><td>${{ doble.ahorro_venta_int }}</td><td>${{ triple.ahorro_venta_int }}</td></tr>
-                        <tr><td>% del ahorro por autoconsumo</td><td>{{ simple.pct_autoconsumo }}%</td><td>{{ doble.pct_autoconsumo }}%</td><td>{{ triple.pct_autoconsumo }}%</td></tr>
-                        <tr><td>% del ahorro por venta a UTE</td><td>{{ simple.pct_venta }}%</td><td>{{ doble.pct_venta }}%</td><td>{{ triple.pct_venta }}%</td></tr>
-                        <tr class="total-row"><td>Ahorro total</td><td>${{ simple.ahorro_total_desglose_int }}</td><td>${{ doble.ahorro_total_desglose_int }}</td><td>${{ triple.ahorro_total_desglose_int }}</td></tr>
+                        <tr><td>Ahorro por autoconsumo</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.ahorro_autoconsumo }}</td>{% endfor %}</tr>
+                        <tr><td>Ahorro por venta de energía a UTE</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.ahorro_venta }}</td>{% endfor %}</tr>
+                        <tr><td>% del ahorro por autoconsumo</td>{% for tarifa in tarifas_mostradas %}<td>{{ tarifa.pct_autoconsumo }}%</td>{% endfor %}</tr>
+                        <tr><td>% del ahorro por venta a UTE</td>{% for tarifa in tarifas_mostradas %}<td>{{ tarifa.pct_venta }}%</td>{% endfor %}</tr>
+                        <tr class="total-row"><td>Ahorro total</td>{% for tarifa in tarifas_mostradas %}<td>${{ tarifa.ahorro_total_desglose }}</td>{% endfor %}</tr>
                     </tbody>
                 </table>
             </div>
@@ -974,6 +979,10 @@
                 <div class="note-box">
                     Este reporte presenta una <strong>simulación económica estimada</strong> en base a los datos energéticos disponibles del cliente, considerando IVA sobre energía y potencia, energía vendida sin IVA y retención IRPF sobre la energía exportada.
                     <br><br>
+                    {% if es_empresa %}
+                    En este reporte de empresa se muestra únicamente la <strong>{{ tarifa_contratada_label|lower }}</strong>, que es la tarifa informada para el cliente en la planilla de constantes.
+                    <br><br>
+                    {% endif %}
                     En tarifa doble horario se asume la exportación en <strong>fuera de punta</strong>. En tarifa triple horario se asume la exportación en <strong>llano</strong>. El crédito por energía vendida del mes actual se calcula usando la exportación del <strong>mes anterior</strong>. En el cuadro comparativo, el descuento por venta se muestra <strong>neto de IRPF 12%</strong>.
                     <br><br>
                     Para este reporte se utilizó un tipo de cambio de <strong>{{ tipo_cambio_usado }}</strong> pesos por dólar. Ese valor queda guardado en el histórico de cada reporte para que los acumulados en USD no cambien al actualizar la constante global.

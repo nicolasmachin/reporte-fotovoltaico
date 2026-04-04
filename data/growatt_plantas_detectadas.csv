@@ -1,0 +1,119 @@
+plant_id,name,status,peak_power,city,country
+367884,Ramiro Bonilla,4,3.4649999141693115,Montevideo,Uruguay
+536449,Varlix,4,6,Montevideo,Uruguay
+543496,Rimisol,4,6,Sección 08,Uruguay
+601417,Agro Lavalle Casa,4,7.260000228881836,Ombues de Lavalle,Uruguay
+634142,Ecec,4,3630,,Uruguay
+669634,PPGG,4,0.0010000000474974513,Montevideo,Uruguay
+712023,Gormat,4,7.199999809265137,Minas,Uruguay
+721500,barrio ventura ,4,1.3200000524520874,Barros Blancos,Uruguay
+735672,Mabenir 0,4,2000,,Uruguay
+793914,ZFC,1,0.10000000149011612,Colonia del Sacramento,Uruguay
+893965,Ismael Capdevilla,4,3.9600000381469727,Ciudad de la Costa,Uruguay
+1233163,Mountline,4,0.0010000000474974513,Las Toscas,Uruguay
+1246177,Cinamon,4,0.0010000000474974513,Montevideo,Uruguay
+1366596,Efusion,4,9,Montevideo,Uruguay
+1544873,ANI,4,0.0010000000474974513,Montevideo,Uruguay
+1845577,Rodrigo ,4,2,Ciudad de la Costa,Uruguay
+1862949,Configuraciones,4,0,Montevideo,Uruguay
+1937552,Prusso Ramirez,4,6,Montevideo,Uruguay
+1948209,Fortylex arriba derecha,4,0,Montevideo,Uruguay
+1968819,Eplosur,4,6,Parque del Plata,Uruguay
+1977449,Topilen,4,4.400000095367432,Canelones,Uruguay
+1979952,PPGG Backup,4,0,Montevideo,Uruguay
+1982070,Luis Meyer (AlvaroL),1,7.300000190734863,Colonia del Sacramento,Uruguay
+2026718,William Martinez,1,7290,,Uruguay
+2292624,Pegui,1,7.650000095367432,Montevideo,Uruguay
+2315687,William Correa,1,5100,Montevideo,Uruguay
+2315981,William Correa Casa,1,12,Montevideo,Uruguay
+2443900,Daniel Colet,1,5.099999904632568,Mal Abrigo,Uruguay
+2458575,Prueba,4,1,Montevideo,Uruguay
+2477548,Cooperativa Agricola,1,3400,,Uruguay
+2501069,Prueba EV charger,4,1,Montevideo,Uruguay
+2540647,Silograin,4,4250,,Uruguay
+2573830,PPGG(Cerro),4,3,Montevideo,Uruguay
+2639566,Alternativas,4,10,Montevideo,Uruguay
+2743448,Cabecita,4,16150,Florida,Uruguay
+2781274,Camarote,4,0,Montevideo,Uruguay
+2840384,Secondo,4,3,Montevide,Uruguay
+2840501,Secondo IMG,4,4,Montevideo,Uruguay
+2840570,Loveland,1,25,Montevideo,Uruguay
+9208307,Pablo Ruffa,1,0,Montevideo,Uruguay
+9219368,Libra Camino Carrasco,1,100,Montevide,Uruguay
+9939775,Equus Minas,1,12,Montevideo,Uruguay
+9953626,Equus Montevideo,1,12,Montevideo,Uruguay
+10044018,Scott,4,0,Montevideo,Uruguay
+10120267,Nicolas Garcia(Neptunia),4,6000,Montevideo,Uruguay
+10243002,Mariana Pereira,1,8000,Montevideo,Uruguay
+10272629,Adrian Bezon,1,7200,Montevideo,Uruguay
+10338632,Alejandro Nuñez,1,20,Montevideo,Uruguay
+10378807,Ulf,1,0,Montevideo,Uruguay
+10393133,Reset,4,15000,Montevideo,Uruguay
+10441714,Lucia Mendez,1,6300,Montevideo,Uruguay
+10468552,Jorge Puga,1,3400,Montevideo,Uruguay
+10479537,Diego Hernandez,1,0,Montevideo,Uruguay
+10505042,Elkis Fagundez,1,10.800000190734863,CANELONES,Uruguay
+10510709,Oscar Godoy,1,0,Montevideo,Uruguay
+10554472,Martin Bartulis,1,8,Montevideo,Uruguay
+10623765,Tianizzia,1,6,,Uruguay
+10642681,Miguel Lemos,4,0,Montevideo,Uruguay
+10644237,Sebastian Caggiano,4,9,Montevideo,Uruguay
+10657806,Pedro Uriarte,4,6.300000190734863,Montevideo,Uruguay
+10691041,Pablo Gonzalez,1,6,Montevideo,Uruguay
+10694915,Pablo Elenter,4,6,Montevideo,Uruguay
+10695329,Enrique Dilazaro,4,6,Montevideo,Uruguay
+10718503,Juan Pablo de Leon,4,6,Maldonado,Uruguay
+10777086,Enrique Dilazaro 2,4,0,Montevideo,Uruguay
+10781553,Tulio,4,6,Montevideo,Uruguay
+10786944,Taller AS,4,0,Montevideo,Uruguay
+10812984,Evelyn Gallán,4,8.100000381469727,Montevideo,Uruguay
+1419543,Pablo Stratta,4,2,Montevideo,Uruguay
+1486997,Sandro Lopez,4,1.6399999856948853,Pando,Uruguay
+1721342,Villa Serrana,4,3,Lavalleja,Uruguay
+1772747,Silvya Silveira,4,3,Montevideo,Uruguay
+1834821,Carlos Gancharov,4,1.840000033378601,Pando,Uruguay
+2433431,Raffo,1,3,Carmelo,Uruguay
+2789667,Rodrigo Alvarez,1,4.25,Playa Verde,Uruguay
+9257145,Miguel Bandera,1,3.4000000953674316,Ciudad de la Costa,Uruguay
+9283737,Raij,4,4.599999904632568,Montevideo,Uruguay
+9357927,OV 31631 GONZALO DAMONTE,4,2.200000047683716,Parque del Plata,Uruguay
+9365501,Diego Cardozo,1,6,Ciudad de la Costa,Uruguay
+9929851,Cristina Vitureira,1,3.700000047683716,Ciudad de la Costa,Uruguay
+10112249,Jorge Fajardo,4,2.200000047683716,Cruz de los Caminos,Uruguay
+10239809,Rubén Penedo,4,0.00800000037997961,Montevideo,Uruguay
+10263239,Gerónimo Viera,1,4.599999904632568,Ciudad de la Costa,Uruguay
+10300753,Nicolás Bocchi ,4,10,MONTEVIDEO,Uruguay
+10305557,Claudia Rolan,1,4.400000095367432,Montevideo,Uruguay
+10358487,Bettina Posada,1,6.599999904632568,Santa Rosa,Uruguay
+10383979,Antonio Costa Vital,1,4.599999904632568,Montevideo,Uruguay
+10420042,Gabriel Irigaray,4,6.599999904632568,Fraccionamento Progreso,Uruguay
+10441696,Jorge Tello,1,4.400000095367432,Montevideo,Uruguay
+10445123,Gabriel Mai,4,4.599999904632568,Maldonado,Uruguay
+10461287,Daniel Vanoli,4,6.599999904632568,Canelones,Uruguay
+10486345,Riverol Santiago,4,9.899999618530273,Ciudad de la Costa,Uruguay
+10486451,Martin Sánchez ,1,5.5,Colonia del Sacramento,Uruguay
+10491989,Alberto Norman,4,6.599999904632568,Montevideo,Uruguay
+10509313,Luis Belora,1,0.007000000216066837,Parque del Plata,Uruguay
+10527044,Luis Henderson ,4,12,Maldonado,Uruguay
+10548331,Diego Ruiz,4,6.599999904632568,San Jose de Mayo,Uruguay
+10570622,Robert de Souza,4,0.007000000216066837,Tacuarembó,Uruguay
+10589827,~Wilmar Ciliuti,4,6,Rosario,Uruguay
+10593850,Suarez - Dalmas,4,0.009999999776482582,Tarariras,Uruguay
+10604229,SHANGRILA,4,0,Ciudad de la Costa,Uruguay
+10622212,Gastón López ,4,0.008999999612569809,Ciudad de la Costa,Uruguay
+10637253,Susana Guerrico,4,4.949999809265137,Cuchilla Alta,Uruguay
+10644433,SEBASTIAN DE RIENZO,4,3.7200000286102295,Solís,Uruguay
+10703096,Alberto Mora,4,5.5,Minas,Uruguay
+10703607,Aldo Portela,4,6,Montevideo,Uruguay
+10707120,Gustavo Proto,4,6,Piriápolis,Uruguay
+10712391,Daniel Cabrera,4,6,Ciudad de la Costa,Uruguay
+10721537,Luciano Labandera,4,6,Canelones,Uruguay
+10724105,Santiago Pons,1,6,Montevideo,Uruguay
+10725331,Gregorio Medina,4,6,Ciudad de la Costa,Uruguay
+10757014,Felipe Ciaran,4,6.960000038146973,Montevideo,Uruguay
+10757438,Fernando Ciaran,4,6,Montevideo,Uruguay
+10757541,Martín González ,4,12,Montevideo,Uruguay
+10772556,Marcelo Crudelli,4,0.007000000216066837,Sauce,Uruguay
+10791076,Wilfredo Gabito,4,9,Soriano,Uruguay
+10807135,Daniel Trías,4,6,Montevideo,Uruguay
+10817774,Diego Trias ,4,6,Montevideo,Uruguay

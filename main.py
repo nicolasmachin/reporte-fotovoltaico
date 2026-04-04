@@ -23,8 +23,8 @@ from src.metrics import (
 )
 from src.storage import RUTA_HISTORICO, guardar_registro, obtener_acumulado_anual
 
-GENERAR_PDF = True
-TESTING = True
+GENERAR_PDF = False
+TESTING = False
 CLIENTE_TESTING = "BARENOF"
 
 MESES_ES = {
@@ -118,6 +118,26 @@ def slug_cliente(valor):
     return texto.replace(" ", "_")
 
 
+def texto_normalizado_opcional(valor, default=""):
+    if pd.isna(valor):
+        return default
+    texto = str(valor).strip()
+    if not texto or texto.lower() == "nan":
+        return default
+    return normalizar_texto(texto)
+
+
+def etiqueta_tarifa(valor):
+    tarifa = texto_normalizado_opcional(valor)
+    etiquetas = {
+        "simple": "Tarifa simple",
+        "doble": "Tarifa doble horario",
+        "triple": "Tarifa triple horario",
+        "zafral": "Tarifa zafral",
+    }
+    return etiquetas.get(tarifa, f"Tarifa {str(valor).strip()}")
+
+
 def obtener_ruta_chrome():
     candidatos = [
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -176,6 +196,7 @@ df_parametros = pd.read_excel("data/tarifas.xlsx", sheet_name="parametros")
 df_simple = pd.read_excel("data/tarifas.xlsx", sheet_name="precios_simple")
 df_doble = pd.read_excel("data/tarifas.xlsx", sheet_name="precios_doble")
 df_triple = pd.read_excel("data/tarifas.xlsx", sheet_name="precios_triple")
+df_zafral = pd.read_excel("data/tarifas.xlsx", sheet_name="zafral")
 
 # Limpieza
 df_clientes.columns = df_clientes.columns.str.strip().str.lower()
@@ -184,6 +205,7 @@ df_parametros.columns = df_parametros.columns.str.strip().str.lower()
 df_simple.columns = df_simple.columns.str.strip().str.lower()
 df_doble.columns = df_doble.columns.str.strip().str.lower()
 df_triple.columns = df_triple.columns.str.strip().str.lower()
+df_zafral.columns = df_zafral.columns.str.strip().str.lower()
 
 if "fecha_ins" in df_constantes.columns and "fecha_inst" not in df_constantes.columns:
     df_constantes = df_constantes.rename(columns={"fecha_ins": "fecha_inst"})
@@ -218,6 +240,7 @@ for col in ["tarifa", "concepto"]:
 
 df_doble["franja"] = df_doble["franja"].astype(str).str.strip().str.lower()
 df_triple["franja"] = df_triple["franja"].astype(str).str.strip().str.lower()
+df_zafral["franja"] = df_zafral["franja"].astype(str).str.strip().str.lower()
 
 # Mes YYYY-MM
 df_clientes["mes"] = pd.to_datetime(
@@ -282,6 +305,8 @@ cargo_pot_kw_doble = obtener_parametro("doble", "potencia_cont")
 
 cargo_fijo_triple = obtener_parametro("triple", "cargo_fijo")
 cargo_pot_kw_triple = obtener_parametro("triple", "potencia_cont")
+cargo_fijo_zafral = obtener_parametro("zafral", "cargo_fijo")
+cargo_pot_kw_zafral = obtener_parametro("zafral", "potencia_cont")
 
 precio_punta_doble = obtener_precio_franja(df_doble, "punta")
 precio_fuera_punta = obtener_precio_franja(df_doble, "fuera_punta")
@@ -289,6 +314,9 @@ precio_fuera_punta = obtener_precio_franja(df_doble, "fuera_punta")
 precio_punta_triple = obtener_precio_franja(df_triple, "punta")
 precio_llano = obtener_precio_franja(df_triple, "llano")
 precio_valle = obtener_precio_franja(df_triple, "valle")
+precio_punta_zafral = obtener_precio_franja(df_zafral, "punta")
+precio_llano_zafral = obtener_precio_franja(df_zafral, "llano")
+precio_valle_zafral = obtener_precio_franja(df_zafral, "valle")
 
 
 def calcular_saldos_cuenta_corriente(df_fuente):
@@ -296,7 +324,7 @@ def calcular_saldos_cuenta_corriente(df_fuente):
 
     for cliente, df_cliente in df_fuente.sort_values(by=["cliente", "mes"]).groupby("cliente"):
         df_cliente = df_cliente.sort_values(by="mes").copy()
-        saldos = {"simple": 0.0, "doble": 0.0, "triple": 0.0}
+        saldos = {"simple": 0.0, "doble": 0.0, "triple": 0.0, "zafral": 0.0}
 
         for _, fila_cliente in df_cliente.iterrows():
             mes_dt = fila_cliente["mes"]
@@ -344,19 +372,28 @@ def calcular_saldos_cuenta_corriente(df_fuente):
                 cargo_energia=calcular_costo_energia_triple(importacion_red, pct_punta, pct_llano, pct_valle, precio_punta_triple, precio_llano, precio_valle),
                 credito_exportacion=calcular_credito_exportacion_triple(exportacion_mes_anterior, precio_llano),
             )
+            factura_zafral = calcular_factura(
+                cargo_fijo=cargo_fijo_zafral,
+                cargo_potencia=potencia * cargo_pot_kw_zafral,
+                cargo_energia=calcular_costo_energia_triple(importacion_red, pct_punta, pct_llano, pct_valle, precio_punta_zafral, precio_llano_zafral, precio_valle_zafral),
+                credito_exportacion=calcular_credito_exportacion_triple(exportacion_mes_anterior, precio_llano_zafral),
+            )
 
             ajustada_simple = aplicar_saldo_cuenta_corriente(factura_simple, saldos["simple"])
             ajustada_doble = aplicar_saldo_cuenta_corriente(factura_doble, saldos["doble"])
             ajustada_triple = aplicar_saldo_cuenta_corriente(factura_triple, saldos["triple"])
+            ajustada_zafral = aplicar_saldo_cuenta_corriente(factura_zafral, saldos["zafral"])
 
             saldos["simple"] = ajustada_simple["saldo_final"]
             saldos["doble"] = ajustada_doble["saldo_final"]
             saldos["triple"] = ajustada_triple["saldo_final"]
+            saldos["zafral"] = ajustada_zafral["saldo_final"]
 
             resultados[(cliente, mes_calculado)] = {
                 "simple": ajustada_simple,
                 "doble": ajustada_doble,
                 "triple": ajustada_triple,
+                "zafral": ajustada_zafral,
             }
 
     return resultados
@@ -398,6 +435,9 @@ for _, fila in df_a_procesar.iterrows():
     pot_inst = float(fila["pot_inst"]) if not pd.isna(fila.get("pot_inst")) else 0.0
     fecha_inst_dt = parsear_periodo(fila.get("fecha_inst"))
     fecha_inst = formatear_periodo(fila.get("fecha_inst"))
+    tipo_cliente = texto_normalizado_opcional(fila.get("tipo"), default="residencial")
+    tarifa_cliente = texto_normalizado_opcional(fila.get("tarifa"))
+    es_empresa = tipo_cliente == "empresa"
 
     pct_punta = float(fila["pct_punta"])
     pct_llano = float(fila["pct_llano"])
@@ -537,13 +577,114 @@ for _, fila in df_a_procesar.iterrows():
         2
     )
 
+    energia_zafral_sin = calcular_costo_energia_triple(
+        consumo, pct_punta, pct_llano, pct_valle,
+        precio_punta_zafral, precio_llano_zafral, precio_valle_zafral
+    )
+    energia_zafral_con = calcular_costo_energia_triple(
+        importacion_red, pct_punta, pct_llano, pct_valle,
+        precio_punta_zafral, precio_llano_zafral, precio_valle_zafral
+    )
+    credito_zafral = calcular_credito_exportacion_triple(exportacion_mes_anterior, precio_llano_zafral)
+
+    factura_zafral_sin = calcular_factura(
+        cargo_fijo=cargo_fijo_zafral,
+        cargo_potencia=potencia * cargo_pot_kw_zafral,
+        cargo_energia=energia_zafral_sin,
+        credito_exportacion=0,
+    )
+
+    factura_zafral_con = calcular_factura(
+        cargo_fijo=cargo_fijo_zafral,
+        cargo_potencia=potencia * cargo_pot_kw_zafral,
+        cargo_energia=energia_zafral_con,
+        credito_exportacion=credito_zafral,
+    )
+
+    desglose_zafral = calcular_desglose_beneficio(factura_zafral_sin, factura_zafral_con)
+
+    ahorro_total_zafral = round(
+        factura_zafral_sin["total_neto"] - factura_zafral_con["total_neto"] + factura_zafral_con["saldo_a_favor"],
+        2
+    )
+
     saldos_mes = saldos_cuenta_corriente.get((cliente, mes_calculado), {})
     factura_simple_con_ajustada = saldos_mes.get("simple", aplicar_saldo_cuenta_corriente(factura_simple_con, 0.0))
     factura_doble_con_ajustada = saldos_mes.get("doble", aplicar_saldo_cuenta_corriente(factura_doble_con, 0.0))
     factura_triple_con_ajustada = saldos_mes.get("triple", aplicar_saldo_cuenta_corriente(factura_triple_con, 0.0))
+    factura_zafral_con_ajustada = saldos_mes.get("zafral", aplicar_saldo_cuenta_corriente(factura_zafral_con, 0.0))
+
+    tarifas_datos = {
+        "simple": {
+            "label": etiqueta_tarifa("simple"),
+            "factura_sin": factura_simple_sin,
+            "factura_con_ajustada": factura_simple_con_ajustada,
+            "desglose": desglose_simple,
+            "ahorro_total": ahorro_total_simple,
+        },
+        "doble": {
+            "label": etiqueta_tarifa("doble"),
+            "factura_sin": factura_doble_sin,
+            "factura_con_ajustada": factura_doble_con_ajustada,
+            "desglose": desglose_doble,
+            "ahorro_total": ahorro_total_doble,
+        },
+        "triple": {
+            "label": etiqueta_tarifa("triple"),
+            "factura_sin": factura_triple_sin,
+            "factura_con_ajustada": factura_triple_con_ajustada,
+            "desglose": desglose_triple,
+            "ahorro_total": ahorro_total_triple,
+        },
+        "zafral": {
+            "label": etiqueta_tarifa("zafral"),
+            "factura_sin": factura_zafral_sin,
+            "factura_con_ajustada": factura_zafral_con_ajustada,
+            "desglose": desglose_zafral,
+            "ahorro_total": ahorro_total_zafral,
+        },
+    }
+
+    if es_empresa:
+        if not tarifa_cliente:
+            print(f"ERROR en {cliente}: el cliente empresa no tiene tarifa definida.")
+            continue
+        if tarifa_cliente not in tarifas_datos:
+            print(f"ERROR en {cliente}: la tarifa '{fila.get('tarifa')}' no está soportada.")
+            continue
+        tarifas_mostradas_keys = [tarifa_cliente]
+    else:
+        tarifas_mostradas_keys = ["simple", "doble", "triple"]
+
+    tarifas_mostradas = []
+    for tarifa_key in tarifas_mostradas_keys:
+        tarifa_data = tarifas_datos[tarifa_key]
+        descuento_venta_factura = max(
+            tarifa_data["desglose"]["ahorro_venta"] - tarifa_data["factura_con_ajustada"]["saldo_generado_mes"],
+            0.0
+        )
+        tarifas_mostradas.append({
+            "key": tarifa_key,
+            "label": tarifa_data["label"],
+            "total_sin": fmt_int(tarifa_data["factura_sin"]["total_neto"]),
+            "total_con": fmt_int(tarifa_data["factura_con_ajustada"]["total_neto"]),
+            "descuento_venta": fmt_int(descuento_venta_factura),
+            "ahorro_autoconsumo": fmt_int(tarifa_data["desglose"]["ahorro_autoconsumo"]),
+            "saldo_generado_mes": fmt_int(tarifa_data["factura_con_ajustada"]["saldo_generado_mes"]),
+            "saldo_inicial": fmt_int(tarifa_data["factura_con_ajustada"]["saldo_inicial"]),
+            "saldo_aplicado": fmt_int(tarifa_data["factura_con_ajustada"]["saldo_aplicado"]),
+            "saldo_final": fmt_int(tarifa_data["factura_con_ajustada"]["saldo_final"]),
+            "ahorro_total": fmt_int(tarifa_data["ahorro_total"]),
+            "ahorro_venta": fmt_int(tarifa_data["desglose"]["ahorro_venta"]),
+            "pct_autoconsumo": fmt_pct(tarifa_data["desglose"]["pct_autoconsumo"]),
+            "pct_venta": fmt_pct(tarifa_data["desglose"]["pct_venta"]),
+            "ahorro_total_desglose": fmt_int(tarifa_data["desglose"]["ahorro_total"]),
+        })
+
+    tarifa_principal = tarifas_datos[tarifas_mostradas_keys[0]]
 
     # Guardar histórico
-    ahorro_total_simple_usd = round(desglose_simple["ahorro_total"] / tipo_cambio_usd, 2)
+    ahorro_total_principal_usd = round(tarifa_principal["desglose"]["ahorro_total"] / tipo_cambio_usd, 2)
     guardar_registro(
         cliente,
         mes_calculado,
@@ -553,14 +694,14 @@ for _, fila in df_a_procesar.iterrows():
             "exportacion": exportacion,
             "autoconsumo": autoconsumo,
             "importacion": importacion_red,
-            "ahorro_autoconsumo": desglose_simple["ahorro_autoconsumo"],
-            "ahorro_venta": desglose_simple["ahorro_venta"],
-            "ahorro_total": desglose_simple["ahorro_total"],
-            "ahorro_total_usd": ahorro_total_simple_usd,
-            "saldo_inicial": factura_simple_con_ajustada["saldo_inicial"],
-            "saldo_aplicado": factura_simple_con_ajustada["saldo_aplicado"],
-            "saldo_generado_mes": factura_simple_con_ajustada["saldo_generado_mes"],
-            "saldo_final": factura_simple_con_ajustada["saldo_final"],
+            "ahorro_autoconsumo": tarifa_principal["desglose"]["ahorro_autoconsumo"],
+            "ahorro_venta": tarifa_principal["desglose"]["ahorro_venta"],
+            "ahorro_total": tarifa_principal["desglose"]["ahorro_total"],
+            "ahorro_total_usd": ahorro_total_principal_usd,
+            "saldo_inicial": tarifa_principal["factura_con_ajustada"]["saldo_inicial"],
+            "saldo_aplicado": tarifa_principal["factura_con_ajustada"]["saldo_aplicado"],
+            "saldo_generado_mes": tarifa_principal["factura_con_ajustada"]["saldo_generado_mes"],
+            "saldo_final": tarifa_principal["factura_con_ajustada"]["saldo_final"],
             "tipo_cambio_usd": tipo_cambio_usd,
         }
     )
@@ -639,12 +780,11 @@ for _, fila in df_a_procesar.iterrows():
     inversion_recuperada_usd = min(ahorro_acumulado_usd, inversion) if inversion > 0 else 0.0
     inversion_faltante_usd = max(inversion - ahorro_acumulado_usd, 0.0) if inversion > 0 else 0.0
 
-    descuento_venta_simple_factura = max(desglose_simple["ahorro_venta"] - factura_simple_con_ajustada["saldo_generado_mes"], 0.0)
-    descuento_venta_doble_factura = max(desglose_doble["ahorro_venta"] - factura_doble_con_ajustada["saldo_generado_mes"], 0.0)
-    descuento_venta_triple_factura = max(desglose_triple["ahorro_venta"] - factura_triple_con_ajustada["saldo_generado_mes"], 0.0)
-
     html = template.render(
         cliente=cliente,
+        es_empresa=es_empresa,
+        tarifa_contratada_label=etiqueta_tarifa(tarifa_cliente) if es_empresa else "",
+        tarifas_mostradas=tarifas_mostradas,
         mes=formatear_mes_es(mes_dt),
         mes_anterior=formatear_mes_es(mes_dt - pd.DateOffset(months=1)),
         generacion=fmt(generacion),
@@ -676,88 +816,6 @@ for _, fila in df_a_procesar.iterrows():
         generacion_total=fmt(generacion),
         generacion_autoconsumo_kwh=fmt(autoconsumo),
         generacion_exportada_kwh=fmt(exportacion),
-
-        simple={
-            "total_sin": fmt(factura_simple_sin["total_neto"]),
-            "total_sin_int": fmt_int(factura_simple_sin["total_neto"]),
-            "total_con": fmt(factura_simple_con_ajustada["total_neto"]),
-            "total_con_int": fmt_int(factura_simple_con_ajustada["total_neto"]),
-            "credito": fmt(factura_simple_con["credito_exportacion"]),
-            "descuento_venta": fmt(descuento_venta_simple_factura),
-            "descuento_venta_int": fmt_int(descuento_venta_simple_factura),
-            "saldo_generado_mes": fmt(factura_simple_con_ajustada["saldo_generado_mes"]),
-            "saldo_generado_mes_int": fmt_int(factura_simple_con_ajustada["saldo_generado_mes"]),
-            "saldo_inicial": fmt(factura_simple_con_ajustada["saldo_inicial"]),
-            "saldo_inicial_int": fmt_int(factura_simple_con_ajustada["saldo_inicial"]),
-            "saldo_aplicado": fmt(factura_simple_con_ajustada["saldo_aplicado"]),
-            "saldo_aplicado_int": fmt_int(factura_simple_con_ajustada["saldo_aplicado"]),
-            "saldo": fmt(factura_simple_con_ajustada["saldo_final"]),
-            "saldo_int": fmt_int(factura_simple_con_ajustada["saldo_final"]),
-            "ahorro_total": fmt(ahorro_total_simple),
-            "ahorro_total_int": fmt_int(ahorro_total_simple),
-            "ahorro_autoconsumo": fmt(desglose_simple["ahorro_autoconsumo"]),
-            "ahorro_autoconsumo_int": fmt_int(desglose_simple["ahorro_autoconsumo"]),
-            "ahorro_venta": fmt(desglose_simple["ahorro_venta"]),
-            "ahorro_venta_int": fmt_int(desglose_simple["ahorro_venta"]),
-            "ahorro_total_desglose": fmt(desglose_simple["ahorro_total"]),
-            "ahorro_total_desglose_int": fmt_int(desglose_simple["ahorro_total"]),
-            "pct_autoconsumo": fmt_pct(desglose_simple["pct_autoconsumo"]),
-            "pct_venta": fmt_pct(desglose_simple["pct_venta"]),
-        },
-        doble={
-            "total_sin": fmt(factura_doble_sin["total_neto"]),
-            "total_sin_int": fmt_int(factura_doble_sin["total_neto"]),
-            "total_con": fmt(factura_doble_con_ajustada["total_neto"]),
-            "total_con_int": fmt_int(factura_doble_con_ajustada["total_neto"]),
-            "credito": fmt(factura_doble_con["credito_exportacion"]),
-            "descuento_venta": fmt(descuento_venta_doble_factura),
-            "descuento_venta_int": fmt_int(descuento_venta_doble_factura),
-            "saldo_generado_mes": fmt(factura_doble_con_ajustada["saldo_generado_mes"]),
-            "saldo_generado_mes_int": fmt_int(factura_doble_con_ajustada["saldo_generado_mes"]),
-            "saldo_inicial": fmt(factura_doble_con_ajustada["saldo_inicial"]),
-            "saldo_inicial_int": fmt_int(factura_doble_con_ajustada["saldo_inicial"]),
-            "saldo_aplicado": fmt(factura_doble_con_ajustada["saldo_aplicado"]),
-            "saldo_aplicado_int": fmt_int(factura_doble_con_ajustada["saldo_aplicado"]),
-            "saldo": fmt(factura_doble_con_ajustada["saldo_final"]),
-            "saldo_int": fmt_int(factura_doble_con_ajustada["saldo_final"]),
-            "ahorro_total": fmt(ahorro_total_doble),
-            "ahorro_total_int": fmt_int(ahorro_total_doble),
-            "ahorro_autoconsumo": fmt(desglose_doble["ahorro_autoconsumo"]),
-            "ahorro_autoconsumo_int": fmt_int(desglose_doble["ahorro_autoconsumo"]),
-            "ahorro_venta": fmt(desglose_doble["ahorro_venta"]),
-            "ahorro_venta_int": fmt_int(desglose_doble["ahorro_venta"]),
-            "ahorro_total_desglose": fmt(desglose_doble["ahorro_total"]),
-            "ahorro_total_desglose_int": fmt_int(desglose_doble["ahorro_total"]),
-            "pct_autoconsumo": fmt_pct(desglose_doble["pct_autoconsumo"]),
-            "pct_venta": fmt_pct(desglose_doble["pct_venta"]),
-        },
-        triple={
-            "total_sin": fmt(factura_triple_sin["total_neto"]),
-            "total_sin_int": fmt_int(factura_triple_sin["total_neto"]),
-            "total_con": fmt(factura_triple_con_ajustada["total_neto"]),
-            "total_con_int": fmt_int(factura_triple_con_ajustada["total_neto"]),
-            "credito": fmt(factura_triple_con["credito_exportacion"]),
-            "descuento_venta": fmt(descuento_venta_triple_factura),
-            "descuento_venta_int": fmt_int(descuento_venta_triple_factura),
-            "saldo_generado_mes": fmt(factura_triple_con_ajustada["saldo_generado_mes"]),
-            "saldo_generado_mes_int": fmt_int(factura_triple_con_ajustada["saldo_generado_mes"]),
-            "saldo_inicial": fmt(factura_triple_con_ajustada["saldo_inicial"]),
-            "saldo_inicial_int": fmt_int(factura_triple_con_ajustada["saldo_inicial"]),
-            "saldo_aplicado": fmt(factura_triple_con_ajustada["saldo_aplicado"]),
-            "saldo_aplicado_int": fmt_int(factura_triple_con_ajustada["saldo_aplicado"]),
-            "saldo": fmt(factura_triple_con_ajustada["saldo_final"]),
-            "saldo_int": fmt_int(factura_triple_con_ajustada["saldo_final"]),
-            "ahorro_total": fmt(ahorro_total_triple),
-            "ahorro_total_int": fmt_int(ahorro_total_triple),
-            "ahorro_autoconsumo": fmt(desglose_triple["ahorro_autoconsumo"]),
-            "ahorro_autoconsumo_int": fmt_int(desglose_triple["ahorro_autoconsumo"]),
-            "ahorro_venta": fmt(desglose_triple["ahorro_venta"]),
-            "ahorro_venta_int": fmt_int(desglose_triple["ahorro_venta"]),
-            "ahorro_total_desglose": fmt(desglose_triple["ahorro_total"]),
-            "ahorro_total_desglose_int": fmt_int(desglose_triple["ahorro_total"]),
-            "pct_autoconsumo": fmt_pct(desglose_triple["pct_autoconsumo"]),
-            "pct_venta": fmt_pct(desglose_triple["pct_venta"]),
-        },
 
         ahorro_acumulado=fmt(ahorro_acumulado),
         ahorro_acumulado_usd=fmt(ahorro_acumulado_usd),
