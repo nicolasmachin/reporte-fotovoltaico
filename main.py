@@ -95,6 +95,8 @@ def fmt(num):
 
 
 def fmt_int(num):
+    if pd.isna(num):
+        return "-"
     return f"{int(round(float(num))):,}".replace(",", ".")
 
 
@@ -103,6 +105,8 @@ def fmt_pct(num):
 
 
 def fmt_decimal(num, decimales=1):
+    if pd.isna(num):
+        return "-"
     formato = f"{{:,.{decimales}f}}"
     return formato.format(float(num)).replace(",", "X").replace(".", ",").replace("X", ".")
 
@@ -125,6 +129,20 @@ def texto_normalizado_opcional(valor, default=""):
     if not texto or texto.lower() == "nan":
         return default
     return normalizar_texto(texto)
+
+
+def parsear_flag_reporte(valor):
+    if pd.isna(valor):
+        return 1
+    texto = str(valor).strip().lower()
+    if texto in {"0", "no", "false", "falso"}:
+        return 0
+    if texto in {"1", "si", "sí", "true", "verdadero"}:
+        return 1
+    try:
+        return 1 if int(float(texto)) != 0 else 0
+    except ValueError:
+        return 1
 
 
 def etiqueta_tarifa(valor):
@@ -221,6 +239,16 @@ df_clientes = df_clientes.merge(
     how="left",
     validate="many_to_one",
 )
+
+if "reporte" in df_clientes.columns:
+    df_clientes["reporte"] = df_clientes["reporte"].apply(parsear_flag_reporte)
+else:
+    df_clientes["reporte"] = 1
+
+if "mail" in df_clientes.columns:
+    df_clientes["mail"] = df_clientes["mail"].fillna("").astype(str).str.strip()
+else:
+    df_clientes["mail"] = ""
 
 constantes_globales = {}
 for _, fila_global in df_constantes_globales_raw.iterrows():
@@ -405,6 +433,8 @@ df_a_procesar = df_mes_actual.copy()
 if procesar_historico_completo:
     df_a_procesar = df_clientes.sort_values(by=["mes", "cliente"]).copy()
 
+df_a_procesar = df_a_procesar[df_a_procesar["reporte"] == 1].copy()
+
 if TESTING:
     cliente_testing_normalizado = normalizar_texto(CLIENTE_TESTING)
     df_a_procesar = df_a_procesar[
@@ -423,8 +453,21 @@ for _, fila in df_a_procesar.iterrows():
     anio = mes_dt.year
     notas_adicionales = []
 
-    if pd.isna(fila["potencia_contratada_kw"]):
-        print(f"ERROR en {cliente}: no hay datos constantes para el cliente.")
+    columnas_obligatorias = [
+        "potencia_contratada_kw",
+        "generacion_kwh",
+        "consumo_kwh",
+        "exportacion_kwh",
+        "pct_punta",
+        "pct_llano",
+        "pct_valle",
+    ]
+    faltantes = [col for col in columnas_obligatorias if pd.isna(fila.get(col))]
+    if faltantes:
+        print(
+            f"ERROR en {cliente} ({mes_calculado}): faltan datos para generar el reporte "
+            f"({', '.join(faltantes)})."
+        )
         continue
 
     potencia = float(fila["potencia_contratada_kw"])
@@ -747,6 +790,7 @@ for _, fila in df_a_procesar.iterrows():
     tiempo_total_retorno = "-"
     mes_retorno_estimado = "-"
     meses_transcurridos_desde_inicio = 0
+    estimacion_retorno_nota = ""
 
     if fecha_inst_dt is not None:
         meses_transcurridos_desde_inicio = (
@@ -775,6 +819,16 @@ for _, fila in df_a_procesar.iterrows():
             tiempo_total_retorno = formatear_duracion_meses(meses_totales_retorno)
             fecha_retorno = mes_dt + pd.DateOffset(months=meses_adicionales)
             mes_retorno_estimado = formatear_mes_es(fecha_retorno)
+        else:
+            estimacion_retorno_nota = (
+                "No hay base suficiente para estimar el retorno de la inversión."
+            )
+
+        if 0 < meses_con_datos_usd < 12:
+            estimacion_retorno_nota = (
+                f"Aviso: la proyección se calculó con {meses_con_datos_usd} "
+                f"{'mes' if meses_con_datos_usd == 1 else 'meses'} de historial útil."
+            )
 
     roi_barra_pct = max(0.0, min(retorno_inversion_pct, 100.0))
     inversion_recuperada_usd = min(ahorro_acumulado_usd, inversion) if inversion > 0 else 0.0
@@ -827,6 +881,7 @@ for _, fila in df_a_procesar.iterrows():
         tiempo_restante_retorno=tiempo_restante_retorno,
         tiempo_total_retorno=tiempo_total_retorno,
         mes_retorno_estimado=mes_retorno_estimado,
+        estimacion_retorno_nota=estimacion_retorno_nota,
         saldo_acumulado=fmt(saldo_acumulado),
         exportacion_acumulada=fmt(exportacion_acumulada),
         importacion_acumulada=fmt(importacion_acumulada),

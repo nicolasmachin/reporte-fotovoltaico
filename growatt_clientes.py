@@ -12,6 +12,9 @@ Alternativa sin token:
 Opciones útiles:
     python3 growatt_clientes.py --mes 2026-03 --salida data/growatt_clientes_2026-03.xlsx
     python3 growatt_clientes.py --mes 2026-03 --actualizar-datos
+    python3 growatt_clientes.py --mes 2026-03 --actualizar-datos --solo-actualizar-datos
+    python3 growatt_clientes.py --mes 2026-03 --cargar-auxiliar
+    python3 growatt_clientes.py --cargar-todos-auxiliares
 
 El script:
     1. Se conecta a Growatt
@@ -28,12 +31,16 @@ from __future__ import annotations
 
 import argparse
 import calendar
+import html
 import os
 import sys
 import time
 import csv
+import re
+import smtplib
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from email.message import EmailMessage
 from pathlib import Path
 
 import growattServer
@@ -50,6 +57,12 @@ DEFAULT_API_TOKEN = "bqp7dd06xcjfs06j51402m004wxpy5jv"
 DEFAULT_ALLOWLIST_PATH = Path("data/growatt_allowlist.csv")
 DEFAULT_SERVER_URL = "https://server.growatt.com/"
 DEFAULT_OPENAPI_BASE_URL = "https://openapi.growatt.com/v1"
+DEFAULT_ALERT_EMAIL_TO = "nmachin@voltia.com.uy"
+DEFAULT_SMTP_HOST = "mail.voltia.com.uy"
+DEFAULT_SMTP_PORT = 465
+DEFAULT_SMTP_USER = "reportes@voltia.com.uy"
+DEFAULT_SMTP_PASSWORD = "Voltia123"
+DEFAULT_SMTP_FROM = "reportes@voltia.com.uy"
 
 
 @dataclass
@@ -63,10 +76,13 @@ class Config:
     reintentos: int
     salida: Path | None
     actualizar_datos: bool
+    solo_actualizar_datos: bool
     xlsx_datos: Path
     allowlist_path: Path
     listar_plantas: bool
     diagnostico_cookie: bool
+    cargar_todos_auxiliares: bool
+    alert_email_to: str
 
 
 def parse_args() -> Config:
@@ -102,6 +118,30 @@ def parse_args() -> Config:
         help='Actualiza la hoja "datos" del archivo base con generacion_kwh.',
     )
     parser.add_argument(
+        "--solo-actualizar-datos",
+        action="store_true",
+        help=(
+            "No consulta Growatt. Lee el Excel auxiliar existente (según --salida o el nombre "
+            "por defecto del mes) y actualiza la hoja \"datos\"."
+        ),
+    )
+    parser.add_argument(
+        "--cargar-auxiliar",
+        action="store_true",
+        help=(
+            "Atajo de --actualizar-datos --solo-actualizar-datos. "
+            "Carga en la hoja \"datos\" el Excel auxiliar ya generado."
+        ),
+    )
+    parser.add_argument(
+        "--cargar-todos-auxiliares",
+        action="store_true",
+        help=(
+            "No consulta Growatt. Carga en la hoja \"datos\" todos los Excel auxiliares "
+            "generados en data/."
+        ),
+    )
+    parser.add_argument(
         "--xlsx-datos",
         type=Path,
         default=DEFAULT_XLSX_DATOS,
@@ -123,8 +163,16 @@ def parse_args() -> Config:
         action="store_true",
         help="Muestra la respuesta cruda de server.growatt.com al usar la cookie web.",
     )
+    parser.add_argument(
+        "--alert-email-to",
+        default=os.environ.get("GROWATT_ALERT_EMAIL_TO", DEFAULT_ALERT_EMAIL_TO),
+        help="Casilla a la que se enviarán alertas automáticas por exportación anómala.",
+    )
 
     args = parser.parse_args()
+
+    actualizar_datos = args.actualizar_datos or args.cargar_auxiliar or args.cargar_todos_auxiliares
+    solo_actualizar_datos = args.solo_actualizar_datos or args.cargar_auxiliar or args.cargar_todos_auxiliares
 
     api_token = os.environ.get("GROWATT_API_TOKEN", DEFAULT_API_TOKEN).strip()
     server_cookie = os.environ.get("GROWATT_SERVER_COOKIE", "").strip()
@@ -145,11 +193,14 @@ def parse_args() -> Config:
         pausa_seg=args.pausa,
         reintentos=args.reintentos,
         salida=args.salida,
-        actualizar_datos=args.actualizar_datos,
+        actualizar_datos=actualizar_datos,
+        solo_actualizar_datos=solo_actualizar_datos,
         xlsx_datos=args.xlsx_datos,
         allowlist_path=args.allowlist,
         listar_plantas=args.listar_plantas,
         diagnostico_cookie=args.diagnostico_cookie,
+        cargar_todos_auxiliares=args.cargar_todos_auxiliares,
+        alert_email_to=args.alert_email_to.strip(),
     )
 
 
@@ -176,6 +227,190 @@ def a_float(valor):
         return float(valor)
     except (TypeError, ValueError):
         return None
+
+
+def formatear_progreso(indice: int, total: int) -> str:
+    if total <= 0:
+        return "[0/0 | 0%]"
+    porcentaje = round((indice / total) * 100)
+    return f"[{indice}/{total} | {porcentaje}%]"
+
+
+def formatear_metrica(valor) -> str:
+    return "N/D" if valor is None else str(valor)
+
+
+def construir_html_alerta_exportacion_baja(alertas: list[dict], meses: list[str]) -> str:
+    filas_html = []
+    for alerta in alertas:
+        filas_html.append(
+            "<tr>"
+            f"<td>{html.escape(str(alerta['cliente']))}</td>"
+            f"<td>{html.escape(str(alerta['id_planta']))}</td>"
+            f"<td>{html.escape(str(alerta['mes']))}</td>"
+            f"<td>{html.escape(formatear_metrica(alerta['generacion_kwh']))}</td>"
+            f"<td>{html.escape(formatear_metrica(alerta['consumo_kwh']))}</td>"
+            f"<td>{html.escape(formatear_metrica(alerta['exportacion_kwh']))}</td>"
+            "</tr>"
+        )
+
+    chips_html = "".join(
+        f'<span style="display:inline-block;background:#e9f3ff;color:#0f4c81;'
+        f'padding:6px 10px;border-radius:999px;font-size:12px;font-weight:600;'
+        f'margin:0 8px 8px 0;">{html.escape(mes)}</span>'
+        for mes in meses
+    )
+
+    return f"""
+    <html>
+      <body style="margin:0;padding:24px;background:#f4f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1f2937;">
+        <div style="max-width:900px;margin:0 auto;background:#ffffff;border:1px solid #dbe4f0;border-radius:18px;overflow:hidden;">
+          <div style="background:linear-gradient(135deg,#0f4c81 0%,#2e75b6 100%);padding:28px 32px;color:#ffffff;">
+            <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;">Voltia · Monitoreo Growatt</div>
+            <h1 style="margin:10px 0 8px 0;font-size:28px;line-height:1.2;">Posible exportación cero configurada</h1>
+            <p style="margin:0;font-size:15px;line-height:1.6;opacity:.92;">
+              Se detectaron clientes con generación mayor a 100 kWh y exportación menor a 5 kWh.
+            </p>
+          </div>
+
+          <div style="padding:28px 32px 12px 32px;">
+            <div style="margin-bottom:18px;">{chips_html}</div>
+
+            <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:18px 20px;margin-bottom:22px;">
+              <div style="font-weight:700;color:#9a3412;margin-bottom:8px;">Criterio de alerta</div>
+              <div style="font-size:14px;line-height:1.7;color:#7c2d12;">
+                <div>Generación mayor a <strong>100 kWh</strong></div>
+                <div>Exportación menor a <strong>5 kWh</strong></div>
+                <div>Exportación con dato válido</div>
+              </div>
+            </div>
+
+            <div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:12px;">
+              Clientes detectados ({len(alertas)})
+            </div>
+
+            <div style="overflow-x:auto;border:1px solid #dbe4f0;border-radius:14px;">
+              <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                <thead>
+                  <tr style="background:#edf4fb;color:#0f4c81;text-align:left;">
+                    <th style="padding:12px 14px;border-bottom:1px solid #dbe4f0;">Cliente</th>
+                    <th style="padding:12px 14px;border-bottom:1px solid #dbe4f0;">Planta</th>
+                    <th style="padding:12px 14px;border-bottom:1px solid #dbe4f0;">Mes</th>
+                    <th style="padding:12px 14px;border-bottom:1px solid #dbe4f0;">Generación</th>
+                    <th style="padding:12px 14px;border-bottom:1px solid #dbe4f0;">Consumo</th>
+                    <th style="padding:12px 14px;border-bottom:1px solid #dbe4f0;">Exportación</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {"".join(filas_html)}
+                </tbody>
+              </table>
+            </div>
+
+            <p style="margin:18px 0 0 0;font-size:13px;line-height:1.6;color:#6b7280;">
+              Este aviso se genera automáticamente al actualizar <strong>datos_clientes.xlsx</strong>.
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>
+    """
+
+
+def detectar_alertas_exportacion_baja(filas: list[dict]) -> list[dict]:
+    alertas = []
+    for fila in filas:
+        generacion = a_float(fila.get("generacion_kwh"))
+        exportacion = a_float(fila.get("exportacion_kwh"))
+        if generacion is None or exportacion is None:
+            continue
+        if generacion > 100 and exportacion < 5:
+            alertas.append(
+                {
+                    "cliente": str(fila.get("cliente") or "").strip(),
+                    "id_planta": fila.get("id_planta"),
+                    "mes": str(fila.get("mes") or "").strip(),
+                    "generacion_kwh": generacion,
+                    "consumo_kwh": a_float(fila.get("consumo_kwh")),
+                    "exportacion_kwh": exportacion,
+                }
+            )
+    return alertas
+
+
+def enviar_alerta_exportacion_baja(config: Config, alertas: list[dict]) -> None:
+    if not alertas:
+        return
+
+    smtp_host = os.environ.get("SMTP_HOST", DEFAULT_SMTP_HOST).strip()
+    smtp_port = int(os.environ.get("SMTP_PORT", str(DEFAULT_SMTP_PORT)))
+    smtp_user = os.environ.get("SMTP_USER", DEFAULT_SMTP_USER).strip()
+    smtp_password = os.environ.get("SMTP_PASSWORD", DEFAULT_SMTP_PASSWORD).strip()
+    smtp_from = os.environ.get("SMTP_FROM", DEFAULT_SMTP_FROM).strip()
+    smtp_use_ssl = os.environ.get("SMTP_USE_SSL", "1").strip() != "0"
+    smtp_use_tls = os.environ.get("SMTP_USE_TLS", "0").strip() != "0"
+
+    meses = sorted({alerta["mes"] for alerta in alertas if alerta.get("mes")})
+    asunto = (
+        f"Alerta Growatt: posible exportación cero configurada ({', '.join(meses)})"
+        if meses else
+        "Alerta Growatt: posible exportación cero configurada"
+    )
+
+    lineas = [
+        "Se detectaron clientes con posible exportación cero configurada.",
+        "",
+        "Criterio:",
+        "- generacion_kwh > 100",
+        "- exportacion_kwh < 5",
+        "- exportacion_kwh con dato válido",
+        "",
+        "Clientes detectados:",
+    ]
+
+    for alerta in alertas:
+        lineas.append(
+            "- "
+            f"{alerta['cliente']} | planta={alerta['id_planta']} | mes={alerta['mes']} | "
+            f"gen={alerta['generacion_kwh']} | cons={formatear_metrica(alerta['consumo_kwh'])} | "
+            f"exp={alerta['exportacion_kwh']}"
+        )
+
+    mensaje = EmailMessage()
+    mensaje["Subject"] = asunto
+    mensaje["From"] = smtp_from
+    mensaje["To"] = config.alert_email_to
+    mensaje.set_content("\n".join(lineas))
+    mensaje.add_alternative(
+        construir_html_alerta_exportacion_baja(alertas, meses),
+        subtype="html",
+    )
+
+    try:
+        cliente_smtp = smtplib.SMTP_SSL if smtp_use_ssl else smtplib.SMTP
+        with cliente_smtp(smtp_host, smtp_port, timeout=30) as servidor:
+            if not smtp_use_ssl:
+                servidor.ehlo()
+                if smtp_use_tls:
+                    servidor.starttls()
+                    servidor.ehlo()
+            servidor.login(smtp_user, smtp_password)
+            servidor.send_message(mensaje)
+        print(f"Alerta enviada por email a {config.alert_email_to}: {len(alertas)} cliente(s).")
+    except Exception as exc:  # noqa: BLE001
+        print(f"AVISO: no se pudo enviar la alerta por email: {exc}")
+
+
+def enviar_correo_prueba_alerta(config: Config) -> None:
+    alerta_prueba = [{
+        "cliente": "PRUEBA ALERTA",
+        "id_planta": "TEST",
+        "mes": date.today().strftime("%Y-%m"),
+        "generacion_kwh": 150.0,
+        "consumo_kwh": 120.0,
+        "exportacion_kwh": 0.0,
+    }]
+    enviar_alerta_exportacion_baja(config, alerta_prueba)
 
 
 def ultimo_dia_mes(fecha: date) -> date:
@@ -213,7 +448,25 @@ def openapi_get_data(
     for intento in range(1, reintentos + 1):
         try:
             response = api.session.get(api.get_url(endpoint), params=params)
-            return api.process_response(response.json(), descripcion)
+            response.raise_for_status()
+            try:
+                payload = response.json()
+            except ValueError as exc:
+                texto = response.text[:500].strip()
+                raise RuntimeError(
+                    f"{descripcion}: respuesta no JSON (HTTP {response.status_code}). "
+                    f"Body: {texto}"
+                ) from exc
+
+            try:
+                return api.process_response(payload, descripcion)
+            except Exception as exc:
+                error_code = payload.get("error_code")
+                error_msg = payload.get("error_msg")
+                raise RuntimeError(
+                    f"{descripcion}: error_code={error_code} error_msg={error_msg} "
+                    f"endpoint={endpoint} params={params}"
+                ) from exc
         except Exception as exc:  # noqa: BLE001
             ultimo_error = exc
             if intento < reintentos:
@@ -266,28 +519,10 @@ def obtener_metricas_mes_desde_smart_meter(
     fecha: date,
     fecha_fin: date,
     generacion_kwh: float | None,
+    dataloggers: list[str] | None = None,
 ) -> dict[str, float | None]:
-    ultimo_error = None
-    dispositivos = None
-    for intento in range(1, 6):
-        try:
-            dispositivos = api.device_list(plant_id).get("devices", [])
-            ultimo_error = None
-            break
-        except Exception as exc:  # noqa: BLE001
-            ultimo_error = exc
-            if intento < 5:
-                time.sleep(min(1.5 * intento, 5.0))
-    if dispositivos is None:
-        raise ultimo_error if ultimo_error is not None else RuntimeError("No se pudo obtener la lista de dispositivos")
-
-    dataloggers = []
-    for dispositivo in dispositivos:
-        if dispositivo.get("type") != 3:
-            continue
-        datalogger_sn = str(dispositivo.get("datalogger_sn") or "").strip()
-        if datalogger_sn and datalogger_sn not in dataloggers:
-            dataloggers.append(datalogger_sn)
+    if dataloggers is None:
+        dataloggers = obtener_dataloggers_planta(api, plant_id)
 
     if not dataloggers:
         return {
@@ -345,6 +580,50 @@ def obtener_metricas_mes_desde_smart_meter(
         "consumo_kwh": consumo_kwh,
         "exportacion_kwh": exportacion_kwh,
     }
+
+
+def obtener_dataloggers_planta(
+    api: growattServer.OpenApiV1,
+    plant_id: int,
+) -> list[str]:
+    ultimo_error = None
+    dispositivos = None
+    for intento in range(1, 6):
+        try:
+            dispositivos = api.device_list(plant_id).get("devices", [])
+            ultimo_error = None
+            break
+        except Exception as exc:  # noqa: BLE001
+            ultimo_error = exc
+            if intento < 5:
+                time.sleep(min(1.5 * intento, 5.0))
+    if dispositivos is None:
+        raise ultimo_error if ultimo_error is not None else RuntimeError("No se pudo obtener la lista de dispositivos")
+
+    dataloggers = []
+    for dispositivo in dispositivos:
+        if dispositivo.get("type") != 3:
+            continue
+        datalogger_sn = str(dispositivo.get("datalogger_sn") or "").strip()
+        if datalogger_sn and datalogger_sn not in dataloggers:
+            dataloggers.append(datalogger_sn)
+
+    return dataloggers
+
+
+def describir_metricas_faltantes_smart_meter(
+    api: growattServer.OpenApiV1,
+    plant_id: int,
+) -> str:
+    try:
+        dataloggers = obtener_dataloggers_planta(api, plant_id)
+    except Exception as exc:  # noqa: BLE001
+        return f"no se pudo leer device_list: {exc}"
+
+    if not dataloggers:
+        return "la planta no tiene smart meter/datalogger tipo 3 visible en Open API"
+
+    return f"smart meter visible, pero sin muestras históricas útiles para esa planta/mes ({len(dataloggers)} datalogger/s)"
 
 
 def obtener_metricas_mes_desde_dispositivo(
@@ -469,9 +748,11 @@ def extraer_energia_mes_token(config: Config, fecha: date) -> list[dict]:
     mes = fecha.strftime("%Y-%m")
     fecha_fin = ultimo_dia_mes(fecha)
 
-    for planta in plantas:
+    total_plantas = len(plantas)
+    for idx, planta in enumerate(plantas, start=1):
         plant_id = planta.get("plant_id")
         plant_name = planta.get("name") or "Sin nombre"
+        progreso = formatear_progreso(idx, total_plantas)
 
         try:
             energia_hist = None
@@ -480,6 +761,7 @@ def extraer_energia_mes_token(config: Config, fecha: date) -> list[dict]:
                 "consumo_kwh": None,
                 "exportacion_kwh": None,
             }
+            aviso_metricas = None
             ultimo_error = None
             for intento in range(1, config.reintentos + 1):
                 try:
@@ -521,10 +803,18 @@ def extraer_energia_mes_token(config: Config, fecha: date) -> list[dict]:
                 "ultimo_dato": "",
             }
             filas.append(fila)
-            energia_legible = fila["generacion_kwh"] if fila["generacion_kwh"] is not None else "N/D"
-            print(f"  OK {plant_name:<35} {energia_legible} kWh")
+            generacion_legible = formatear_metrica(fila["generacion_kwh"])
+            consumo_legible = formatear_metrica(fila["consumo_kwh"])
+            exportacion_legible = formatear_metrica(fila["exportacion_kwh"])
+            print(
+                f"  {progreso} OK {plant_name:<35} "
+                f"gen={generacion_legible} cons={consumo_legible} exp={exportacion_legible}"
+            )
+            if fila["consumo_kwh"] is None or fila["exportacion_kwh"] is None:
+                aviso_metricas = describir_metricas_faltantes_smart_meter(api, plant_id)
+                print(f"  {progreso} AVISO {plant_name}: {aviso_metricas}")
         except Exception as exc:  # noqa: BLE001
-            print(f"  ERROR {plant_name}: {exc}")
+            print(f"  {progreso} ERROR {plant_name}: {exc}")
             filas.append(
                 {
                     "id_planta": plant_id,
@@ -570,9 +860,11 @@ def extraer_energia_mes(config: Config, fecha: date) -> list[dict]:
     filas = []
     mes = fecha.strftime("%Y-%m")
 
-    for planta in plantas:
+    total_plantas = len(plantas)
+    for idx, planta in enumerate(plantas, start=1):
         plant_id = planta.get("plantId") or planta.get("id")
         plant_name = planta.get("plantName") or planta.get("name") or "Sin nombre"
+        progreso = formatear_progreso(idx, total_plantas)
 
         try:
             detalle = api.plant_detail(plant_id, timespan=growattServer.Timespan.month, date=fecha)
@@ -598,10 +890,15 @@ def extraer_energia_mes(config: Config, fecha: date) -> list[dict]:
                 "ultimo_dato": ultimo_dato,
             }
             filas.append(fila)
-            energia_legible = fila["generacion_kwh"] if fila["generacion_kwh"] is not None else "N/D"
-            print(f"  OK {plant_name:<35} {energia_legible} kWh")
+            generacion_legible = formatear_metrica(fila["generacion_kwh"])
+            consumo_legible = formatear_metrica(fila["consumo_kwh"])
+            exportacion_legible = formatear_metrica(fila["exportacion_kwh"])
+            print(
+                f"  {progreso} OK {plant_name:<35} "
+                f"gen={generacion_legible} cons={consumo_legible} exp={exportacion_legible}"
+            )
         except Exception as exc:  # noqa: BLE001
-            print(f"  ERROR {plant_name}: {exc}")
+            print(f"  {progreso} ERROR {plant_name}: {exc}")
             filas.append(
                 {
                     "id_planta": plant_id,
@@ -664,9 +961,11 @@ def extraer_energia_mes_cookie(config: Config, fecha: date) -> list[dict]:
     filas = []
     mes = fecha.strftime("%Y-%m")
 
-    for planta in plantas:
+    total_plantas = len(plantas)
+    for idx, planta in enumerate(plantas, start=1):
         plant_id = planta.get("plantId") or planta.get("id")
         plant_name = planta.get("plantName") or planta.get("plantNameStr") or planta.get("name") or "Sin nombre"
+        progreso = formatear_progreso(idx, total_plantas)
 
         try:
             detalle = api.plant_detail(plant_id, timespan=growattServer.Timespan.month, date=fecha)
@@ -691,10 +990,15 @@ def extraer_energia_mes_cookie(config: Config, fecha: date) -> list[dict]:
                 "ultimo_dato": ultimo_dato,
             }
             filas.append(fila)
-            energia_legible = fila["generacion_kwh"] if fila["generacion_kwh"] is not None else "N/D"
-            print(f"  OK {plant_name:<35} {energia_legible} kWh")
+            generacion_legible = formatear_metrica(fila["generacion_kwh"])
+            consumo_legible = formatear_metrica(fila["consumo_kwh"])
+            exportacion_legible = formatear_metrica(fila["exportacion_kwh"])
+            print(
+                f"  {progreso} OK {plant_name:<35} "
+                f"gen={generacion_legible} cons={consumo_legible} exp={exportacion_legible}"
+            )
         except Exception as exc:  # noqa: BLE001
-            print(f"  ERROR {plant_name}: {exc}")
+            print(f"  {progreso} ERROR {plant_name}: {exc}")
             filas.append(
                 {
                     "id_planta": plant_id,
@@ -799,6 +1103,86 @@ def guardar_excel_auxiliar(filas: list[dict], fecha: date, destino: Path) -> Pat
     return destino
 
 
+def cargar_excel_auxiliar(destino: Path) -> list[dict]:
+    if not destino.exists():
+        raise FileNotFoundError(f"No existe el Excel auxiliar: {destino}")
+
+    # La fila 1 es un título fusionado; los encabezados reales empiezan en la fila 2.
+    df = pd.read_excel(destino, sheet_name=0, header=1)
+    df.columns = df.columns.str.strip().str.lower()
+    columnas_renombradas = {
+        "id planta": "id_planta",
+        "cliente / planta": "cliente",
+        "mes": "mes",
+        "generación (kwh)": "generacion_kwh",
+        "consumo (kwh)": "consumo_kwh",
+        "exportación (kwh)": "exportacion_kwh",
+        "potencia nominal (kw)": "potencia_nominal_kw",
+        "estado": "estado",
+        "último dato": "ultimo_dato",
+    }
+    df = df.rename(columns=columnas_renombradas)
+
+    columnas_requeridas = ["cliente", "mes", "generacion_kwh", "consumo_kwh", "exportacion_kwh"]
+    faltantes = [col for col in columnas_requeridas if col not in df.columns]
+    if faltantes:
+        raise ValueError(
+            f'El Excel auxiliar "{destino}" no tiene las columnas necesarias: {", ".join(faltantes)}'
+        )
+
+    df = df[df["cliente"].notna()].copy()
+    df["cliente"] = df["cliente"].astype(str).str.strip()
+    df = df[(df["cliente"] != "") & (df["cliente"].str.upper() != "TOTAL")].copy()
+    df["mes"] = df["mes"].astype(str).str.strip()
+
+    filas = df.to_dict(orient="records")
+    if not filas:
+        raise ValueError(f'El Excel auxiliar "{destino}" no tiene filas válidas para importar.')
+    return filas
+
+
+def obtener_auxiliares_generados(base_dir: Path) -> list[Path]:
+    patrones = [
+        "growatt_clientes_*.xlsx",
+        "growatt_historico_*.xlsx",
+    ]
+    candidatos: list[Path] = []
+    for patron in patrones:
+        candidatos.extend(base_dir.glob(patron))
+
+    def clave_orden(path: Path) -> tuple[int, str]:
+        nombre = path.name
+        if nombre.startswith("growatt_clientes_"):
+            match = re.search(r"(\d{4}-\d{2})", nombre)
+            return (1, match.group(1) if match else nombre)
+        if nombre.startswith("growatt_historico_"):
+            match = re.search(r"_a_(\d{4}-\d{2})", nombre)
+            return (2, match.group(1) if match else nombre)
+        return (9, nombre)
+
+    return sorted({path.resolve() for path in candidatos}, key=clave_orden)
+
+
+def cargar_todos_los_auxiliares(base_dir: Path) -> tuple[list[dict], list[Path]]:
+    archivos = obtener_auxiliares_generados(base_dir)
+    if not archivos:
+        raise FileNotFoundError(f"No se encontraron Excel auxiliares en {base_dir}")
+
+    filas: list[dict] = []
+    archivos_validos: list[Path] = []
+    for archivo in archivos:
+        try:
+            filas.extend(cargar_excel_auxiliar(archivo))
+            archivos_validos.append(archivo)
+        except ValueError as exc:
+            print(f"  AVISO se omite {archivo.name}: {exc}")
+
+    if not archivos_validos:
+        raise ValueError(f"No se encontraron Excel auxiliares compatibles en {base_dir}")
+
+    return filas, archivos_validos
+
+
 def actualizar_hoja_datos(xlsx_path: Path, filas_growatt: list[dict]) -> tuple[int, int]:
     if not xlsx_path.exists():
         raise FileNotFoundError(f"No existe el archivo base: {xlsx_path}")
@@ -839,21 +1223,42 @@ def actualizar_hoja_datos(xlsx_path: Path, filas_growatt: list[dict]) -> tuple[i
         for idx, fila in df_datos.iterrows()
     }
 
+    def resolver_valor(actual, nuevo):
+        nuevo_num = a_float(nuevo)
+        actual_num = a_float(actual)
+        if nuevo_num is None:
+            return actual_num
+        return nuevo_num
+
     for _, fila in df_nuevo.iterrows():
         clave = (fila["cliente"], fila["mes"])
         if clave in indice_existente:
             idx = indice_existente[clave]
-            df_datos.at[idx, "generacion_kwh"] = fila["generacion_kwh"]
-            df_datos.at[idx, "consumo_kwh"] = fila["consumo_kwh"]
-            df_datos.at[idx, "exportacion_kwh"] = fila["exportacion_kwh"]
+            df_datos.at[idx, "generacion_kwh"] = resolver_valor(
+                df_datos.at[idx, "generacion_kwh"],
+                fila["generacion_kwh"],
+            )
+            df_datos.at[idx, "consumo_kwh"] = resolver_valor(
+                df_datos.at[idx, "consumo_kwh"],
+                fila["consumo_kwh"],
+            )
+            df_datos.at[idx, "exportacion_kwh"] = resolver_valor(
+                df_datos.at[idx, "exportacion_kwh"],
+                fila["exportacion_kwh"],
+            )
             actualizados += 1
         else:
+            generacion = a_float(fila["generacion_kwh"])
+            consumo = a_float(fila["consumo_kwh"])
+            exportacion = a_float(fila["exportacion_kwh"])
+            if generacion is None and consumo is None and exportacion is None:
+                continue
             nueva_fila = {columna: pd.NA for columna in df_datos.columns}
             nueva_fila["cliente"] = fila["cliente"]
             nueva_fila["mes"] = fila["mes"]
-            nueva_fila["generacion_kwh"] = fila["generacion_kwh"]
-            nueva_fila["consumo_kwh"] = fila["consumo_kwh"]
-            nueva_fila["exportacion_kwh"] = fila["exportacion_kwh"]
+            nueva_fila["generacion_kwh"] = generacion
+            nueva_fila["consumo_kwh"] = consumo
+            nueva_fila["exportacion_kwh"] = exportacion
             df_datos = pd.concat(
                 [
                     df_datos,
@@ -885,12 +1290,22 @@ def main() -> int:
     fecha = obtener_fecha_inicio(config.mes)
     destino = config.salida or obtener_nombre_salida(fecha)
 
-    filas = extraer_energia_mes(config, fecha)
-    if not filas:
-        print("No hubo datos para exportar.")
-        return 0
-
-    guardar_excel_auxiliar(filas, fecha, destino)
+    if config.cargar_todos_auxiliares:
+        filas, archivos = cargar_todos_los_auxiliares(config.xlsx_datos.parent)
+        print("\nUsando Excel auxiliares existentes:")
+        for archivo in archivos:
+            print(f"  - {archivo}")
+    elif config.solo_actualizar_datos:
+        if not config.actualizar_datos:
+            raise ValueError("Usá --actualizar-datos junto con --solo-actualizar-datos.")
+        filas = cargar_excel_auxiliar(destino)
+        print(f"\nUsando Excel auxiliar existente: {destino}")
+    else:
+        filas = extraer_energia_mes(config, fecha)
+        if not filas:
+            print("No hubo datos para exportar.")
+            return 0
+        guardar_excel_auxiliar(filas, fecha, destino)
 
     if config.actualizar_datos:
         actualizados, insertados = actualizar_hoja_datos(config.xlsx_datos, filas)
@@ -898,6 +1313,10 @@ def main() -> int:
             f'Hoja "datos" actualizada en {config.xlsx_datos}: '
             f"{actualizados} registros actualizados, {insertados} registros nuevos."
         )
+        alertas = detectar_alertas_exportacion_baja(filas)
+        if alertas:
+            print(f"Se detectaron {len(alertas)} cliente(s) con posible exportación cero configurada.")
+            enviar_alerta_exportacion_baja(config, alertas)
 
     return 0
 

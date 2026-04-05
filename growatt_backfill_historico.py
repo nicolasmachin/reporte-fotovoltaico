@@ -38,7 +38,10 @@ from growatt_clientes import (
     actualizar_hoja_datos,
     a_float,
     cargar_allowlist,
+    describir_metricas_faltantes_smart_meter,
     guardar_excel_auxiliar,
+    obtener_nombre_salida,
+    obtener_dataloggers_planta,
     obtener_metricas_mes_desde_smart_meter,
     obtener_todas_las_plantas_openapi,
     ultimo_dia_mes,
@@ -251,6 +254,7 @@ def obtener_filas_historicas(config: BackfillConfig) -> list[dict]:
         plant_id = int(planta.get("plant_id"))
         cliente = str(planta.get("name") or "Sin nombre").strip()
         print(f"\nProcesando {cliente} ({plant_id})...")
+        dataloggers_planta = None
 
         try:
             generaciones = obtener_generacion_historica_directa(
@@ -268,10 +272,18 @@ def obtener_filas_historicas(config: BackfillConfig) -> list[dict]:
         meses_disponibles = sorted(generaciones.keys())
         print(f"  Meses con generación: {len(meses_disponibles)}")
 
+        try:
+            dataloggers_planta = obtener_dataloggers_planta(api, plant_id)
+            if not dataloggers_planta:
+                print("  AVISO: planta sin smart meter/datalogger visible en Open API.")
+        except Exception as exc:  # noqa: BLE001
+            print(f"  AVISO: no se pudo leer device_list una vez para toda la planta: {exc}")
+
         for mes in meses_disponibles:
             fecha_mes = datetime.strptime(mes, "%Y-%m").date()
             fecha_fin = ultimo_dia_mes(fecha_mes)
             generacion_kwh = generaciones[mes]
+            aviso_metricas = None
 
             try:
                 metricas = obtener_metricas_mes_desde_smart_meter(
@@ -280,13 +292,27 @@ def obtener_filas_historicas(config: BackfillConfig) -> list[dict]:
                     fecha_mes,
                     fecha_fin,
                     generacion_kwh,
+                    dataloggers=dataloggers_planta,
                 )
-            except Exception:  # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001
+                aviso_metricas = f"error al consultar smart meter: {exc}"
                 metricas = {
                     "generacion_kwh": generacion_kwh,
                     "consumo_kwh": None,
                     "exportacion_kwh": None,
                 }
+
+            if metricas.get("consumo_kwh") is None or metricas.get("exportacion_kwh") is None:
+                if aviso_metricas is None:
+                    if dataloggers_planta == []:
+                        aviso_metricas = "la planta no tiene smart meter/datalogger tipo 3 visible en Open API"
+                    elif dataloggers_planta:
+                        aviso_metricas = (
+                            "smart meter visible, pero sin muestras históricas útiles "
+                            f"para esa planta/mes ({len(dataloggers_planta)} datalogger/s)"
+                        )
+                    else:
+                        aviso_metricas = describir_metricas_faltantes_smart_meter(api, plant_id)
 
             filas.append(
                 {
@@ -305,6 +331,8 @@ def obtener_filas_historicas(config: BackfillConfig) -> list[dict]:
                 f"  OK {mes}: gen={metricas.get('generacion_kwh', generacion_kwh)} "
                 f"cons={metricas.get('consumo_kwh')} exp={metricas.get('exportacion_kwh')}"
             )
+            if aviso_metricas is not None:
+                print(f"     AVISO {mes}: {aviso_metricas}")
             time.sleep(config.pausa_seg)
 
     return filas
@@ -312,6 +340,24 @@ def obtener_filas_historicas(config: BackfillConfig) -> list[dict]:
 
 def obtener_nombre_salida_historica(desde: date, hasta: date) -> Path:
     return Path(f"data/growatt_historico_{desde.strftime('%Y-%m')}_a_{hasta.strftime('%Y-%m')}.xlsx")
+
+
+def guardar_excels_mensuales_historicos(filas: list[dict]) -> list[Path]:
+    filas_por_mes: dict[str, list[dict]] = {}
+    for fila in filas:
+        mes = str(fila.get("mes") or "").strip()
+        if not mes:
+            continue
+        filas_por_mes.setdefault(mes, []).append(fila)
+
+    archivos_generados: list[Path] = []
+    for mes in sorted(filas_por_mes.keys()):
+        fecha_mes = datetime.strptime(mes, "%Y-%m").date()
+        destino_mes = obtener_nombre_salida(fecha_mes)
+        guardar_excel_auxiliar(filas_por_mes[mes], fecha_mes, destino_mes)
+        archivos_generados.append(destino_mes)
+
+    return archivos_generados
 
 
 def main() -> int:
@@ -326,6 +372,8 @@ def main() -> int:
         return 0
 
     guardar_excel_auxiliar(filas, fecha_hasta, destino)
+    archivos_mensuales = guardar_excels_mensuales_historicos(filas)
+    print(f"Auxiliares mensuales generados: {len(archivos_mensuales)}")
 
     if config.actualizar_datos:
         actualizados, insertados = actualizar_hoja_datos(config.xlsx_datos, filas)

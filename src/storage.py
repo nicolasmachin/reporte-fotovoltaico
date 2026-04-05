@@ -4,6 +4,17 @@ import pandas as pd
 RUTA_HISTORICO = "data/historico_clientes.xlsx"
 
 
+def _promedio_excluyendo_primer_mes(serie):
+    resultado = pd.Series(pd.NA, index=serie.index, dtype="Float64")
+    validos = serie.dropna()
+    if len(validos) <= 1:
+        return resultado
+
+    promedios = validos.iloc[1:].expanding().mean().round(2)
+    resultado.loc[validos.index[1:]] = promedios.astype(float).to_numpy()
+    return resultado
+
+
 def _agregar_promedio_historico(df):
     if df.empty:
         df["ahorro_promedio_historico"] = pd.Series(dtype=float)
@@ -14,8 +25,7 @@ def _agregar_promedio_historico(df):
     df = df.sort_values(by=["cliente", "mes_orden", "mes"])
     df["ahorro_promedio_historico"] = (
         df.groupby("cliente")["ahorro_total"]
-        .transform(lambda s: s.expanding().mean())
-        .round(2)
+        .transform(_promedio_excluyendo_primer_mes)
     )
     return df.drop(columns=["mes_orden"])
 
@@ -159,11 +169,17 @@ def obtener_acumulado_anual(cliente, anio):
     if df_anio.empty:
         return None
 
-    ahorro_promedio_historico = round(df["ahorro_total"].dropna().mean(), 2)
-    meses_con_usd = int(df["ahorro_total_usd"].dropna().shape[0])
+    serie_ahorro = df["ahorro_total"].dropna().reset_index(drop=True)
+    serie_ahorro_usd = df["ahorro_total_usd"].dropna().reset_index(drop=True)
+
+    ahorro_promedio_historico = 0.0
+    if len(serie_ahorro) > 1:
+        ahorro_promedio_historico = round(serie_ahorro.iloc[1:].mean(), 2)
+
+    meses_con_usd = max(int(serie_ahorro_usd.shape[0]) - 1, 0)
     ahorro_promedio_historico_usd = 0.0
-    if meses_con_usd > 0:
-        ahorro_promedio_historico_usd = round(df["ahorro_total_usd"].dropna().mean(), 2)
+    if len(serie_ahorro_usd) > 1:
+        ahorro_promedio_historico_usd = round(serie_ahorro_usd.iloc[1:].mean(), 2)
 
     return {
         "ahorro_total": round(df["ahorro_total"].sum(), 2),
